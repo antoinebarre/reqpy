@@ -2,6 +2,14 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(
+    0,
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            '..')
+    )
+)
 
-import reqpy # type: ignore
+
+import reqpy # type: ignore # noqa

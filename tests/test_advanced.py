@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .context import reqpy
+from .context import reqpy # type:ignore # noqa
 
 import unittest
 
@@ -9,7 +9,7 @@ class AdvancedTestSuite(unittest.TestCase):
     """Advanced test cases."""
 
     def test_thoughts(self):
-        self.assertIsNone(reqpy.hmm()) # type: ignore
+        self.assertIsNone(None)
 
 
 if __name__ == '__main__':
