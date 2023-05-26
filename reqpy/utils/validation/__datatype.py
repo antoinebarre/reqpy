@@ -11,7 +11,7 @@ __all__ = [
 
 # IMPORT
 import typing
-import dragonfly
+import reqpy
 
 
 def validateInstance(
@@ -51,7 +51,7 @@ def validateInstance(
         return data
 
     # raise error
-    msg = dragonfly.utils.exception.createErrorMessage(
+    msg = reqpy.utils.exception.createErrorMessage(
         errorMsg=("The input shall respected the"
                   f" expected types (inheritance: {inheritance})"),
         expected=str(instances),
@@ -74,7 +74,7 @@ def validateListInstances(data: typing.Any, instance) -> list:
 
     # check instance data type
     if (not isinstance(instance, type)) or instance in (list, set, tuple):
-        msg = dragonfly.utils.exception.createErrorMessage(
+        msg = reqpy.utils.exception.createErrorMessage(
             errorMsg=((
                 "the instance object shall be"
                 " a Type object different of list, tuple or set"
@@ -91,7 +91,7 @@ def validateListInstances(data: typing.Any, instance) -> list:
         return data
 
     # Raise error
-    msg = dragonfly.utils.exception.createErrorMessage(
+    msg = reqpy.utils.exception.createErrorMessage(
         errorMsg=(f"The data shall be a {str(instance)}"
                   f" or a list of {str(instance)}"),
         expected=(f"{str(instance)} object "
@@ -118,7 +118,7 @@ def validateTupleInstances(
 
     # check instance data type
     if (not isinstance(instance, type)) or instance in (list, set, tuple):
-        msg = dragonfly.utils.exception.createErrorMessage(
+        msg = reqpy.utils.exception.createErrorMessage(
             errorMsg=((
                 "the instance object shall be"
                 " a Type object different of list, tuple or set"
@@ -135,7 +135,7 @@ def validateTupleInstances(
         return data
 
     # Raise error
-    msg = dragonfly.utils.exception.createErrorMessage(
+    msg = reqpy.utils.exception.createErrorMessage(
         errorMsg=(f"The data shall be a {str(instance)}"
                   f" or a tuple of {str(instance)}"),
         expectedValue=(f"{str(instance)} object "

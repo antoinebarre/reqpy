@@ -16,31 +16,31 @@ def test_validatefile():
     
     # no file
     with pytest.raises(ValueError) :
-        _ = dragonfly.utils.validation.validateFile(temp.name)
+        _ = reqpy.utils.validation.validateFile(temp.name)
     
     
 def test_validateFileExtension():
     """ test the tools to validate extension with a path"""
     
-    from dragonfly.utils.validation.__paths import InvalidFileExtension
+    from reqpy.utils.validation.__paths import InvalidFileExtension
     
     # bad extension
     with pytest.raises(InvalidFileExtension):
-        dragonfly.utils.validation.validateFileExtension("toto.c",".py")
+        reqpy.utils.validation.validateFileExtension("toto.c",".py")
     
     with pytest.raises(InvalidFileExtension):
-        dragonfly.utils.validation.validateFileExtension("toto.c",(".py",'.f'))
+        reqpy.utils.validation.validateFileExtension("toto.c",(".py",'.f'))
         
     # good extension
-    path = dragonfly.utils.validation.validateFileExtension("toto.py",(".py",'.f'))
+    path = reqpy.utils.validation.validateFileExtension("toto.py",(".py",'.f'))
     
     assert path == 'toto.py'
     
 
 def test_isvalidExtension():
     """ test the tools to asses is a file has the appropriate extension"""
-    assert dragonfly.utils.validation.isValidExtension("toto.c",(".py",'.f')) == False
-    assert dragonfly.utils.validation.isValidExtension("toto.f",(".py",'.f')) == True
+    assert reqpy.utils.validation.isValidExtension("toto.c",(".py",'.f')) == False
+    assert reqpy.utils.validation.isValidExtension("toto.f",(".py",'.f')) == True
     
 def test_validateExtensionDefinition():
     """ test the validation of the extension inputs"""
@@ -49,23 +49,23 @@ def test_validateExtensionDefinition():
     
     # bad extension
     with pytest.raises(ValueError):
-        dragonfly.utils.validation.validateExtensionDefinition("toto")
+        reqpy.utils.validation.validateExtensionDefinition("toto")
         
     with pytest.raises(ValueError):
-        dragonfly.utils.validation.validateExtensionDefinition((".c","f"))
+        reqpy.utils.validation.validateExtensionDefinition((".c","f"))
     
     # good extension definition
     
     val_init = (".c",".f")
-    val = dragonfly.utils.validation.validateExtensionDefinition(val_init)
+    val = reqpy.utils.validation.validateExtensionDefinition(val_init)
     assert val is val_init
     
 def test_validateFolder():
     with tempfile.TemporaryDirectory() as tmpdirname:
-        assert dragonfly.utils.validation.validateFolder(tmpdirname)==tmpdirname
+        assert reqpy.utils.validation.validateFolder(tmpdirname)==tmpdirname
         tmpName = tmpdirname
         
     with pytest.raises(ValueError):
-        dragonfly.utils.validation.validateFolder(tmpName)
+        reqpy.utils.validation.validateFolder(tmpName)
         
   

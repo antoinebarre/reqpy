@@ -14,8 +14,8 @@ __all__ = [
 # IMPORT
 import os
 import pathlib
-from dragonfly.utils.validation import validateInstance, validateTupleInstances
-from dragonfly.utils.exception import createErrorMessage
+from reqpy.utils.validation import validateInstance, validateTupleInstances
+from reqpy.utils.exception import createErrorMessage
 
 
 # Definition of deidcated exception

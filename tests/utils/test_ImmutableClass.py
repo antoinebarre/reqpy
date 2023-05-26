@@ -3,7 +3,7 @@
 """
 
 # Import Module
-from dragonfly.utils import ImmutableClass
+from reqpy.utils import ImmutableClass
 import pytest
 
 
