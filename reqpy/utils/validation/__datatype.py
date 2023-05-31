@@ -96,7 +96,7 @@ def validateListInstances(data: typing.Any, instance) -> list:
                   f" or a list of {str(instance)}"),
         expected=(f"{str(instance)} object "
                   f"or list of {str(instance)} objects"),
-        current=data
+        current = str(data)
     )
     raise TypeError(msg)
 
@@ -138,8 +138,8 @@ def validateTupleInstances(
     msg = reqpy.utils.exception.createErrorMessage(
         errorMsg=(f"The data shall be a {str(instance)}"
                   f" or a tuple of {str(instance)}"),
-        expectedValue=(f"{str(instance)} object "
+        expected=(f"{str(instance)} object "
                        f"or Tuple of {str(instance)} objects"),
-        realValue=str(data)
+        current=str(data)
     )
     raise TypeError(msg)
