@@ -1,9 +1,9 @@
 """ Requirements class definition of reqpy and associated tools"""
 
 # IMPORT SECTION
-from pydantic import BaseModel, constr,Field, validator
 from enum import auto, StrEnum
 from datetime import datetime
+from pydantic import BaseModel, Field, validator
 from .__settings import RequirementSettings
 
 
@@ -23,12 +23,10 @@ class ValidationStatus(StrEnum):
     VALID = auto()
     UNVALID = auto()
     INVALID = auto()
-    
+
 # ########################################################################## #
 # ############################ REQUIREMENT CLASS ########################### #
 # ########################################################################## #
-from pydantic import BaseModel, Field, validator
-from datetime import datetime
 
 class Requirement(BaseModel):
     """
@@ -44,9 +42,13 @@ class Requirement(BaseModel):
 
     title: str = Field(
         min_length=RequirementSettings.min_title_length,
-        max_length=RequirementSettings.max_title_length
+        max_length=RequirementSettings.max_title_length,
+        default="Requirement Title"
     )
-    content: str = Field(max_length=1000)
+    detail: str = Field(
+        max_length=RequirementSettings.max_detail_length,
+        default="Description of the requirement as Markdown"
+    )
     validation_status: ValidationStatus = ValidationStatus.UNVALID
     creation_date: datetime = datetime.now()
 
@@ -70,10 +72,9 @@ class Requirement(BaseModel):
             raise ValueError('First character shall be an alphabet (a-z or A-Z).')
         return title.capitalize()
 
-    
     # -------------------------- #
     class Config:
+        """Configuration class for the Requirement class.
+        """
         allow_mutation = True  # allow mutation for the class Requirement
         validate_assignment = True # activate the validation for assignement
-        
-        
