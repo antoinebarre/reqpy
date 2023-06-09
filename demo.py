@@ -1,16 +1,17 @@
 import reqpy
+import pathlib
 
 
 r = reqpy.validation.has_punctuation_or_accent("string ")
 
-print(r)
+
 
 req1 = reqpy.Requirement(
-    title="asfgfdfdgdfgdg.titi",
+    title="asfgfdfdgdfgdgtiti",
     detail="dfslfjksfjsdfj",
     validation_status="valid"
 )
-print(req1)
+
 
 # reqpy.ReqFile(path = "reqDemo2.yaml").write(req1)
 
@@ -20,3 +21,7 @@ print(req1)
 
 # req3 = reqpy.ReqFile(path = "reqDemo_test.yaml").read()
 # print(req3)
+
+t = reqpy.ReqFolder(rootdir=pathlib.Path())
+t.create_dirs()
+t.clean_dirs()

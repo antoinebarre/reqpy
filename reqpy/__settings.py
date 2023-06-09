@@ -1,6 +1,7 @@
 """All settings needed by reqpy"""
 # IMPORT MODULES
 from typing import NamedTuple
+from pathlib import Path
 
 # ########################################################################## #
 # ######################### REQUIREMENTS PARAMETERS ######################## #
@@ -15,3 +16,21 @@ class RequirementSettings(NamedTuple):
 class RequirementFileSettings(NamedTuple):
     allowed_extensions = (".yml",".yaml") # min size of the title
     default_extension = ".yml" # default extension during file creation
+
+class FolderStructure(NamedTuple):
+    folder_structure =(
+        "requirements",
+        "requirements/lins",
+        "requirements/info",  
+    )
+    
+    # {
+    #     'name':'requirements',
+    #     'sub': [{
+    #         'name':'links',
+    #         'sub':[]
+    #     },{
+    #         'name':'analysis',
+    #         'sub':[]
+    #     }]
+    # }
