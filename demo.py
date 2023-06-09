@@ -1,15 +1,22 @@
 import reqpy
 
+
+r = reqpy.validation.has_punctuation_or_accent("string ")
+
+print(r)
+
 req1 = reqpy.Requirement(
-    title="asfgfdfdgdfgdg",
-    content="dfslfjksfjsdfj"
+    title="asfgfdfdgdfgdg.titi",
+    detail="dfslfjksfjsdfj",
+    validation_status="valid"
 )
-
-
 print(req1)
 
-reqfile = reqpy.RefFile(path="toto.yml")
-print(reqfile.exists())
+# reqpy.ReqFile(path = "reqDemo2.yaml").write(req1)
 
-req2 = reqpy.Requirement()
-print(req2)
+# req3 = reqpy.ReqFile(path = "reqDemo1.yaml").read()
+
+# reqpy.ReqFile(path = "reqDemo_test.yaml").write(req3)
+
+# req3 = reqpy.ReqFile(path = "reqDemo_test.yaml").read()
+# print(req3)

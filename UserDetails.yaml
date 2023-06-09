@@ -1,0 +1,7 @@
+UserName: Alice
+Password: star123*
+phone: 3256
+AccessKeys:
+- EmployeeTable
+- SoftwaresList
+- HardwareList
