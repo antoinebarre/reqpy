@@ -1,17 +1,28 @@
 import reqpy
 import pathlib
-
-
-r = reqpy.validation.has_punctuation_or_accent("string ")
+import os
 
 
 
 req1 = reqpy.Requirement(
-    title="asfgfdfdgdfgdgtiti",
+    title="asfgfdfdg dfgdgtifd gghfdti",
     detail="dfslfjksfjsdfj",
     validation_status="valid"
 )
 
+filereq = reqpy.ReqFile(path ="toto.yaml")
+filereq.write(req1)
+print(filereq.get_valid_fileName())
+print(filereq.is_valid_fileName())
+
+aa = filereq.rename_file()
+
+print(filereq.path)
+
+print("allez")
+print(filereq.is_valid_fileName())
+
+os.remove(aa)
 
 # reqpy.ReqFile(path = "reqDemo2.yaml").write(req1)
 

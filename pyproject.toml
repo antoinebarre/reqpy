@@ -19,6 +19,7 @@ typeguard = "^4.0.0"
 pydantic = "^1.10.8"
 pylint-pydantic = "^0.1.8"
 mock = "^5.0.2"
+pylance = "^0.4.20"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -6,7 +6,7 @@
 #     sub_conf: dict
 #     ) -> <tuple(Path):
 #     """ Provide a tuple of Path based on a dict that contains dictionary with name and sub field (see example)
-    
+
 #     dictionnary example:
 #     folder_structure ={
 #         'name':'requirements',

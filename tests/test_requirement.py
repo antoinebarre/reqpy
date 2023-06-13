@@ -59,6 +59,20 @@ class TestReqFile:
         requirement = Requirement(title="Test Requirement", detail="This is a test requirement.")
         req_file.write(requirement)
         return str(file_path)
+    
+    @pytest.fixture
+    def temp_file2(self,tmp_path):
+        file_path = tmp_path / "Sample Requirement File.yml"
+        freq = ReqFile(path=file_path)
+        freq.write(Requirement(title = "toto tata titi", detail="sdfkmsdkfsmkfkdsklfds"))
+        return file_path
+    
+    @pytest.fixture
+    def temp_file3(self,tmp_path):
+        file_path = tmp_path / "Toto_tata_titi.yml"
+        freq = ReqFile(path=file_path)
+        freq.write(Requirement(title = "toto tata titi", detail="sdfkmsdkfsmkfkdsklfds"))
+        return file_path
 
     def test_validate_extension_valid(self):
         """
@@ -118,5 +132,26 @@ class TestReqFile:
         req_file.write(requirement)
         assert req_file.exists() is True
 
-    # Add more test cases for other methods in the ReqFile class
+    def test_get_valid_fileName(tmp_path,temp_file2):
+        # Create a sample requirement file with a valid title
+        freq = ReqFile(path=temp_file2)
+        
+        # Check if the valid file name is returned
+        assert freq.get_valid_fileName() == "Toto_tata_titi"
+
+    def test_is_valid_fileName_valid_name(tmp_path,temp_file3):
+       
+        # Create an instance of ReqFile
+        req_file = ReqFile(path=temp_file3)
+
+        # Check if the file name is valid
+        assert req_file.is_valid_fileName() == True
+
+    def test_is_valid_fileName_invalid_name(tmp_path,temp_file2):
+        # Create an instance of ReqFile
+        req_file = ReqFile(path=temp_file2)
+
+        # Check if the file name is invalid
+        assert req_file.is_valid_fileName() == False
+
 
