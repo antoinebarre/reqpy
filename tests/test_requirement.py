@@ -122,12 +122,12 @@ class TestReqFile:
         with pytest.raises(FileNotFoundError):
             req_file.read()
 
-    def test_write(self):
+    def test_write(self,tmp_path):
         """
         Test that the write() method successfully 
         writes a YAML file based on the Requirement object.
         """
-        req_file = ReqFile(path="output.yml")
+        req_file = ReqFile(path= tmp_path / "output.yml")
         requirement = Requirement(title="Test Requirement", detail="This is a test requirement.")
         req_file.write(requirement)
         assert req_file.exists() is True
