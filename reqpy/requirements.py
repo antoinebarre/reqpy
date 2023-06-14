@@ -248,7 +248,8 @@ class ReqFile(BaseModel):
         """
         # Specify the folder path and the file name
         folder_path = self.path.parent
-        new_file_name = (self.get_valid_fileName() + RequirementFileSettings.default_extension)
+        new_file_name = (self.get_valid_fileName() +
+                         RequirementFileSettings.default_extension)
 
         # Create the Path objects for the new file
         new_file_path = folder_path / new_file_name

@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from pathlib import Path
-from reqpy import Requirement,ReqFile
+from reqpy.requirements import Requirement,ReqFile
 from reqpy.__settings import RequirementSettings, RequirementFileSettings
 
 # Test the Requirement class

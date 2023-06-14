@@ -33,18 +33,21 @@ import pathlib
 # req3 = reqpy.ReqFile(path = "reqDemo_test.yaml").read()
 # print(req3)
 
-t = reqpy.ReqFolder(rootdir=pathlib.Path())
-t.create_dirs()
+t =  reqpy.utils.randomParagraph()
+print(t)
+
+# t = reqpy.ReqFolder(rootdir=pathlib.Path())
+# t.create_dirs()
 
 
-print(t.get_missing_drectories())
-print(t.is_correct_folders())
+# print(t.get_missing_drectories())
+# print(t.is_correct_folders())
 
 
-t.create_dirs()
-print(t.get_missing_drectories())
-print(t.is_correct_folders())
+# t.create_dirs()
+# print(t.get_missing_drectories())
+# print(t.is_correct_folders())
 
-print(t.get_list_of_files())
-print(t.get_incorrect_files())
-print(t.is_correct_files())
+# print(t.get_list_of_files())
+# print(t.get_incorrect_files())
+# print(t.is_correct_files())
