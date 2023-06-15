@@ -1,12 +1,10 @@
 #!/usr/bin/python
+from reqpy import cli, __app_name__
 
 
-import click
+def main():
+    cli.app(prog_name=__app_name__)
 
-@click.command()
-@click.option("--name", prompt="enter your name", help="fist test")
-def hello(name):
-    click.echo(f"HELLO {name}")
-    
-if __name__=="__main__":
-    hello()
+
+if __name__ == "__main__":
+    main()
