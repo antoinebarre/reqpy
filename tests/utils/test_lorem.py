@@ -1,5 +1,7 @@
 import pytest
-from reqpy.utils.__lorem_ipsum import TextLorem, randomSentence, randomParagraph, randomText
+from reqpy.utils.__lorem_ipsum import TextLorem, randomSentence, randomParagraph, randomText, generate_random_string
+from string import ascii_letters, digits
+
 
 @pytest.fixture
 def lorem_instance():
@@ -56,3 +58,31 @@ def test_randomText_returns_string():
     """
     text = randomText()
     assert isinstance(text, str)
+
+
+def test_generate_random_string_valid_size():
+    # Test with valid size
+    size = 10
+    result = generate_random_string(size)
+    assert len(result) == size
+    assert all(c in ascii_letters + digits + " " for c in result)
+
+def test_generate_random_string_invalid_size():
+    # Test with invalid size (less than or equal to 0)
+    with pytest.raises(ValueError):
+        generate_random_string(0)
+
+def test_generate_random_string_large_size():
+    # Test with large size
+    size = 1000000
+    result = generate_random_string(size)
+    assert len(result) == size
+    assert all(c in ascii_letters + digits + " " for c in result)
+
+def test_generate_random_string_single_character():
+    # Test with size of 1
+    size = 1
+    result = generate_random_string(size)
+    assert len(result) == size
+    assert all(c in ascii_letters + digits + " " for c in result)
+

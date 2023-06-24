@@ -3,6 +3,7 @@ from pathlib import Path
 from pydantic import BaseModel, validator
 import shutil
 from typing import List
+import logging
 
 __all__ = [
     "ReqFolder"
@@ -41,7 +42,7 @@ class ReqFolder(BaseModel):
             existing folder path.
         """
 
-        if not (rootdir.exists() and rootdir.is_dir()):
+        if not rootdir.is_dir():
             raise ValueError(
                 "rootdir property shall be an existing folder path\n" +
                 f" - Current dir (relative): {str(rootdir)}\n" +
@@ -60,8 +61,12 @@ class ReqFolder(BaseModel):
         for folder in FolderStructure.folder_structure:
             tmpPath = self.rootdir / folder
             tmpPath.mkdir(parents=True, exist_ok=True)
-            print("create:", self.rootdir / folder)
-    # TODO : add log
+
+            # log and console
+            msg = f"create folder :{(self.rootdir / folder).absolute()}"
+            logging.info(
+                msg
+            )
 
     def clean_dirs(self, forced: bool = True):
         """
@@ -72,8 +77,12 @@ class ReqFolder(BaseModel):
             Defaults to True.
         """
         for folder in FolderStructure.folder_structure:
+
             shutil.rmtree(self.rootdir / folder, ignore_errors=forced)
-            print("remove:", self.rootdir / folder)
+
+            # logging
+            msg = f"remove folder :{(self.rootdir / folder).absolute()}\n"
+            logging.info(msg)
 
     def get_missing_drectories(self) -> List[Path]:
         """

@@ -1,11 +1,13 @@
 """ LOREM ISPUM MODULE TO GENERATE RANDOM TEXT"""
 
 import random
+import string
 
 __all__ = [
     'randomParagraph',
     'randomSentence',
-    "randomText"
+    "randomText",
+    "generate_random_string",
 ]
 
 # list of possibles words
@@ -157,3 +159,32 @@ def randomText(*args, **kwargs):
         str: A randomly generated paragraph.
     """
     return TextLorem().text(*args, **kwargs)
+
+
+import random
+import string
+
+
+def generate_random_string(size: int) -> str:
+    """
+    Generate a random string with alphanumeric characters and spaces.
+
+    Args:
+        size (int): The desired size of the string.
+
+    Returns:
+        str: The randomly generated string.
+
+    Raises:
+        ValueError: If the size argument is less than or equal to 0.
+    """
+    if size <= 0:
+        raise ValueError("Size argument must be greater than 0.")
+
+    # Choose a random character from alphanumeric characters and spaces
+    first_char = random.choice(string.ascii_letters)
+    remaining_chars = ''.join(
+        random.choices(string.ascii_letters + string.digits + " ", k=size - 1)
+        )
+
+    return first_char + remaining_chars

@@ -1,157 +1,166 @@
 import pytest
 from datetime import datetime
 from pathlib import Path
-from reqpy.requirements import Requirement,ReqFile
-from reqpy.__settings import RequirementSettings, RequirementFileSettings
+from reqpy.requirements import Requirement, RequirementFileError, RequiqrementFolderError
 
-# Test the Requirement class
-class TestRequirement:
-    """ Test Requirement class"""
-    def test_default_values(self):
-        """
-        Test that a Requirement instance is initialized with default values.
-        """
-        requirement = Requirement()
-        assert requirement.title == "Requirement Title"
-        assert requirement.detail == "Description of the requirement as Markdown"
-        assert requirement.validation_status == "UNVALID"
-        assert isinstance(requirement.creation_date, datetime)
+@pytest.fixture
+def requirement_data():
+    return {
+        "title": "Test Requirement",
+        "detail": "Test requirement description",
+        "validation_status": "UNVALID",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
 
-    def test_title_min_length(self):
-        """
-        Test that a ValueError is raised when the title is below the minimum length.
-        """
-        with pytest.raises(ValueError):
-            Requirement(title="Ab")
+def test_requirement_creation(requirement_data):
+    """
+    Test case for creating a Requirement object
+    """
+    requirement = Requirement(**requirement_data)
+    assert requirement.title == requirement_data["title"]
+    assert requirement.detail == requirement_data["detail"]
+    assert requirement.validation_status == requirement_data["validation_status"]
+    assert isinstance(requirement.creation_date, datetime)
+    assert requirement.rationale == requirement_data["rationale"]
 
-    def test_title_max_length(self):
-        """
-        Test that a ValueError is raised when the title exceeds the maximum length.
-        """
-        with pytest.raises(ValueError):
-            Requirement(title="A" * (RequirementSettings.max_title_length + 1))
+def test_requirement_validation_status_validation():
+    """
+    Test case for validating the validation_status attribute.
+    """
+    requirement_data = {
+        "title": "Test Requirement",
+        "detail": "Test requirement description",
+        "validation_status": "TOTO",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
+    with pytest.raises(ValueError):
+        Requirement(**requirement_data)
 
-    def test_title_start_with_alpha(self):
-        """
-        Test that a ValueError is raised when the title does not start with an alphabet character.
-        """
-        with pytest.raises(ValueError):
-            Requirement(title="123 Requirement")
+def test_requirement_title_validation():
+    """
+    Test case for validating the title attribute.
+    """
+    requirement_data = {
+        "title": "123 Title",
+        "detail": "Test requirement description",
+        "validation_status": "UNVALID",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
+    with pytest.raises(ValueError):
+        Requirement(**requirement_data)
 
-    def test_title_characters_or_figure(self):
-        """
-        Test that a ValueError is raised when the title contains punctuation or accent characters.
-        """
-        with pytest.raises(ValueError):
-            Requirement(title="Requirement!")
-
-    # Add more test cases for other methods or properties in the Requirement class
-
-# Test the ReqFile class
-class TestReqFile:  
-    @pytest.fixture
-    def temp_file(self, tmp_path):
-        """
-        Fixture that creates a temporary file and returns its path.
-        """
-        file_path = tmp_path / "temp_file.yml"
-        req_file = ReqFile(path=file_path)
-        requirement = Requirement(title="Test Requirement", detail="This is a test requirement.")
-        req_file.write(requirement)
-        return str(file_path)
+    requirement_data = {
+        "title": "abc Title",
+        "detail": "Test requirement description",
+        "validation_status": "UNVALID",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
+    with pytest.raises(ValueError):
+        Requirement(**requirement_data)
     
-    @pytest.fixture
-    def temp_file2(self,tmp_path):
-        file_path = tmp_path / "Sample Requirement File.yml"
-        freq = ReqFile(path=file_path)
-        freq.write(Requirement(title = "toto tata titi", detail="sdfkmsdkfsmkfkdsklfds"))
-        return file_path
+
+def test_requirement_file_handling(tmpdir):
+    """
+    Test case for file handling methods of Requirement class.
+    """
+    requirement_data = {
+        "title": "Test Requirement",
+        "detail": "Test requirement description",
+        "validation_status": "UNVALID",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
+    requirement = Requirement(**requirement_data)
+    folder_path = Path(tmpdir)
     
-    @pytest.fixture
-    def temp_file3(self,tmp_path):
-        file_path = tmp_path / "Toto_tata_titi.yml"
-        freq = ReqFile(path=file_path)
-        freq.write(Requirement(title = "toto tata titi", detail="sdfkmsdkfsmkfkdsklfds"))
-        return file_path
+    # Test write() method
+    path2test = requirement.write(folderPath=folder_path)
+    file_path = folder_path / requirement.get_valid_fileName()
+    assert file_path.exists()
+    assert file_path == path2test
+    
+    # Test read() method
+    read_requirement = Requirement.read(filePath=file_path)
+    assert read_requirement.title == requirement.title
+    assert read_requirement.detail == requirement.detail
+    assert read_requirement.validation_status == requirement.validation_status
+    assert read_requirement.creation_date == requirement.creation_date
+    assert read_requirement.rationale == requirement.rationale
+    
+    # Test rename() method
+    old_name = folder_path / "tototata.yml"
+    file_path.rename(old_name)
+    new_file_path = requirement.rename(old_name)
+    assert new_file_path != old_name
+    assert new_file_path.exists()
+    
+    # Test is_valid_fileName() method
+    print(new_file_path,requirement.title)
+    assert requirement.is_valid_fileName(new_file_path)
+    invalid_file_path = folder_path / "invalid_file.txt"
+    assert not requirement.is_valid_fileName(invalid_file_path)
+    
+    # Test get_file_Errors() method
+    errors = Requirement.get_file_Errors(invalid_file_path)
+    assert len(errors) > 0
 
-    def test_validate_extension_valid(self):
-        """
-        Test that the extension validation passes for a valid file path.
-        """
-        req_file = ReqFile(path="requirements.yml")
-        validated_path = req_file.validate_extension(req_file.path)
-        assert validated_path == Path("requirements.yml")
+def test_requirement_file_handling_exceptions(tmpdir):
+    """
+    Test case for file handling exceptions of Requirement class.
+    """
+    requirement_data = {
+        "title": "Test Requirement",
+        "detail": "Test requirement description",
+        "validation_status": "UNVALID",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
+    requirement = Requirement(**requirement_data)
+    folder_path = Path(tmpdir)
+    
+    # Test write() method with invalid folder path
+    invalid_folder_path = folder_path / "invalid_folder"
+    with pytest.raises(RequiqrementFolderError):
+        requirement.write(folderPath=invalid_folder_path)
+    
+    # Test read() method with invalid file path
+    invalid_file_path = folder_path / "invalid_file.txt"
+    with pytest.raises(RequirementFileError):
+        Requirement.read(filePath=invalid_file_path)
+    
+    # Test rename() method with invalid file path
+    invalid_file_path = folder_path / "invalid_file.txt"
+    with pytest.raises(RequirementFileError):
+        requirement.rename(invalid_file_path)
 
-    def test_validate_extension_invalid(self):
-        """
-        Test that a ValueError is raised when the extension validation fails.
-        """
-        with pytest.raises(ValueError):
-            req_file = ReqFile(path="requirements.docx")
+def test_requirement_validation_tools(tmpdir):
+    """
+    Test case for validation tools of Requirement class.
+    """
+    requirement_data = {
+        "title": "Test Requirement",
+        "detail": "Test requirement description",
+        "validation_status": "UNVALID",
+        "creation_date": datetime.now(),
+        "rationale": "Test requirement rationale"
+    }
+    requirement = Requirement(**requirement_data)
+    folder_path = Path(tmpdir)
 
-    def test_exists(self,temp_file):
-        """
-        Test that the exists() method returns True when the file exists.
-        """
-        req_file = ReqFile(path=temp_file)
-        assert req_file.exists() is True
+    reqFile =requirement.write(folderPath=folder_path)
 
-    def test_exists_file_not_found(self):
-        """
-        Test that the exists() method returns False when the file does not exist.
-        """
-        req_file = ReqFile(path="nonexistent_file.yml")
-        assert req_file.exists() == False
+    # Test is_RequirementFile() method
+    assert Requirement.is_RequirementFile(reqFile)
+    invalid_file_path = reqFile.rename(folder_path / "invalid_file.txt")
+    assert not Requirement.is_RequirementFile(invalid_file_path)
+    
+    # Test is_valid_RequirementFile_Name() method
+    invalid_file_path = invalid_file_path.rename(folder_path / "invalid_requirement.yml")
+    assert not Requirement.is_valid_RequirementFile_Name(invalid_file_path)
 
-    def test_read_file_exists(self,temp_file):
-        """
-        Test that the read() method successfully 
-        reads the requirement file and returns 
-        a Requirement object.
-        """
-        req_file = ReqFile(path=temp_file)
-        requirement = req_file.read()
-        assert isinstance(requirement, Requirement)
-
-    def test_read_file_not_found(self):
-        """
-        Test that a FileNotFoundError is raised when 
-        the read() method is called on a non-existent file.
-        """
-        req_file = ReqFile(path="nonexistent_file.yml")
-        with pytest.raises(FileNotFoundError):
-            req_file.read()
-
-    def test_write(self,tmp_path):
-        """
-        Test that the write() method successfully 
-        writes a YAML file based on the Requirement object.
-        """
-        req_file = ReqFile(path= tmp_path / "output.yml")
-        requirement = Requirement(title="Test Requirement", detail="This is a test requirement.")
-        req_file.write(requirement)
-        assert req_file.exists() is True
-
-    def test_get_valid_fileName(tmp_path,temp_file2):
-        # Create a sample requirement file with a valid title
-        freq = ReqFile(path=temp_file2)
-        
-        # Check if the valid file name is returned
-        assert freq.get_valid_fileName() == "Toto_tata_titi"
-
-    def test_is_valid_fileName_valid_name(tmp_path,temp_file3):
-       
-        # Create an instance of ReqFile
-        req_file = ReqFile(path=temp_file3)
-
-        # Check if the file name is valid
-        assert req_file.is_valid_fileName() == True
-
-    def test_is_valid_fileName_invalid_name(tmp_path,temp_file2):
-        # Create an instance of ReqFile
-        req_file = ReqFile(path=temp_file2)
-
-        # Check if the file name is invalid
-        assert req_file.is_valid_fileName() == False
-
-
+    valid_file_path = invalid_file_path.rename(reqFile)
+    assert Requirement.is_valid_RequirementFile_Name(valid_file_path)

@@ -16,14 +16,16 @@ class RequirementSettings(NamedTuple):
 
 
 class RequirementFileSettings(NamedTuple):
-    allowed_extensions = (".yml", ".yaml")  # min size of the title
+    allowed_extensions = (".yml", ".yaml")  # allowed extensions
     default_extension = ".yml"  # default extension during file creation
 
 
 class FolderStructure(NamedTuple):
     folder_structure = (
         "requirements",
-        "requirements/lins",
-        "requirements/info",
+        "requirements/__links__",
+        "requirements/__DB__",
+        "requirements/__definitions__",
+        "requirements/__Annex__",
     )
     main_folder = "requirements"

@@ -6,6 +6,7 @@ import typer
 from typing_extensions import Annotated
 
 from reqpy import __app_name__, __version__
+import reqpy
 
 app = typer.Typer()
 
@@ -20,21 +21,9 @@ def _sco_callback(value:bool) -> None:
         raise typer.Exit()
 
 
-@app.command(short_help='hello world')
-def hello(name: str,
-    lastname: Annotated[str, typer.Option(help="Last name of person to greet.")] = "",
-    formal: Annotated[bool, typer.Option(help="Say hi formally.")] = False,
-):
-    """
-    Say hi to NAME, optionally with a --lastname.
-
-    If --formal is used, say hi very formally.
-    """
-    if formal:
-        print(f"Good day Ms. {name} {lastname}.")
-    else:
-        print(f"Hello {name} {lastname}")
-
+@app.command(short_help='delete the existing requirement database')
+def delete():
+    reqpy.reset_reqpy()
 
 @app.callback()
 def common(
