@@ -129,13 +129,21 @@ def test_get_incorrect_files(req_folder):
     # Two files with incorrect extensions are added
     assert len(incorrect_files) == 2
 
-def test_is_correct_files(req_folder):
+def test_is_correct_files_false(req_folder):
     # Add some files with incorrect extensions
     incorrect_folder = req_folder.rootdir / FolderStructure.main_folder
     (incorrect_folder / "file1.txt").touch()
     (incorrect_folder / "file2.py").touch()
 
     assert not req_folder.is_correct_files()
+
+def test_is_correct_files_true(req_folder):
+    # Add some files with correct extensions
+    correct_folder = req_folder.rootdir / FolderStructure.main_folder
+    (correct_folder / "file1.yml").touch()
+    (correct_folder / "file2.yml").touch()
+
+    assert req_folder.is_correct_files()
 
 def test_is_correct_folders(req_folder):
     # Remove one of the required folders

@@ -27,5 +27,7 @@ class FolderStructure(NamedTuple):
         "requirements/__DB__",
         "requirements/__definitions__",
         "requirements/__Annex__",
+        "requirements/__references__",
     )
     main_folder = "requirements"
+    

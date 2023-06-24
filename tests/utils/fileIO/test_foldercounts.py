@@ -6,7 +6,7 @@ from reqpy.utils.fileIO import count_folders
 @pytest.fixture(scope="function")
 def temp_folders(tmp_path) -> pathlib.Path:
     # Create temporary folders for testing
-    folder_path = tmp_path / "test_folder"
+    folder_path :pathlib.Path = tmp_path / "test_folder"
     folder_path.mkdir()
 
     subfolder1 = folder_path / "subfolder1"
