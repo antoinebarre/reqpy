@@ -151,3 +151,9 @@ def test_list_containing_folders_with_all_options(setup_folders):
     assert len(containing_folders) == len(setup_folders["result_all_option"])
     assert all(folder in setup_folders["result_all_option"] for folder in containing_folders)
 
+
+
+def test_list_folders_with_nonexistent_folder():
+    folder_path = pathlib.Path("/path/to/nonexistent/folder")
+    with pytest.raises(FileExistsError):
+        list_folders(folder_path)

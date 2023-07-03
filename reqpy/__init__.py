@@ -9,12 +9,13 @@ import logging
 from . import utils as utils
 from . import requirements as requirements
 from . import database as database
+from . import folders as folders
 from .tools import *
+from .__logging import setup_logging, LogLevel
 
 
 # logging format for reqpy
-logging.basicConfig(
-    format='%(asctime)s %(funcName)20s %(levelname)s - %(message)s',
-    datefmt='%d-%b-%y %H:%M:%S',
-    level=logging.WARNING
-    )
+setup_logging(
+    console_log_level=LogLevel.INFO,
+    logfile_log_level=LogLevel.DEBUG
+)

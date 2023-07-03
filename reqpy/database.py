@@ -1,18 +1,30 @@
-from .__settings import FolderStructure, RequirementFileSettings
+from .__settings import RequirementFileSettings
 from pathlib import Path
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 import shutil
 from typing import List
 import logging
+from .folders import FolderStructure
 
 __all__ = [
     "ReqFolder"
 ]
 
 
-class DataBaseError(Exception):
+class RequirementsDataBaseError(Exception):
     # raised when there is a error in the database handling
     pass
+
+
+class ReqDB(BaseModel):
+    rootdir: Path = Field(allow_mutation=False)
+
+    class Config:
+        """Configuration class for the Requirement class.
+        """
+        validate_assignment = True  # activate the validation for assignement
+        extra = 'forbid'  # unknow field is not permitted for the requirement
+
 
 
 class ReqFolder(BaseModel):
@@ -58,7 +70,7 @@ class ReqFolder(BaseModel):
             None
         """
 
-        for folder in FolderStructure.folder_structure:
+        for folder in FolderStructure().foldersList:
             tmpPath = self.rootdir / folder
             tmpPath.mkdir(parents=True, exist_ok=True)
 
@@ -76,7 +88,7 @@ class ReqFolder(BaseModel):
             forced (bool): If True, ignore errors and force deletion.
             Defaults to True.
         """
-        for folder in FolderStructure.folder_structure:
+        for folder in FolderStructure().foldersList:
 
             shutil.rmtree(self.rootdir / folder, ignore_errors=forced)
 
@@ -93,7 +105,7 @@ class ReqFolder(BaseModel):
         """
         missing_folders: list[Path] = []
 
-        for folder in FolderStructure.folder_structure:
+        for folder in FolderStructure().foldersList:
             tested_Path = self.rootdir / folder
 
             if not tested_Path.exists():
@@ -102,7 +114,7 @@ class ReqFolder(BaseModel):
 
     def get_list_of_files(self) -> list[Path]:
         """
-        Get a list of files in the requirements folder.
+        Get a list of files in the requirements (rootfolder) folder.
 
         Returns:
             list[Path]: A list of Path objects representing files in the
@@ -118,9 +130,9 @@ class ReqFolder(BaseModel):
                 "The following folders are missing:\n" +
                 f"{self.get_missing_drectories}"
             )
-            raise DataBaseError(msg)
+            raise RequirementsDataBaseError(msg)
 
-        requirement_folder = self.rootdir / FolderStructure.main_folder
+        requirement_folder = self.rootdir / FolderStructure().main_folder
 
         p = requirement_folder.glob('**/*')
         return [x for x in p if x.is_file()]

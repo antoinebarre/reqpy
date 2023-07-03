@@ -5,7 +5,7 @@ import pathlib
 
 from reqpy.requirements import Requirement
 from reqpy.database import ReqFolder
-from reqpy.__settings import FolderStructure
+from reqpy.folders import FolderStructure
 from reqpy.utils import generate_random_string, randomText
 
 from faker import Faker

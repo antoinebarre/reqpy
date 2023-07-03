@@ -1,0 +1,6 @@
+creation_date: 2023-06-28 08:35:20.378381
+detail: Description of the requirement as Markdown
+rationale: !!python/object/new:reqpy.RequirementItems.RequirementRationale
+- Rationale of the requirement
+title: Tititidfgddfg
+validation_status: UNVALID

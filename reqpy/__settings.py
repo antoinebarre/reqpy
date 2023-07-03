@@ -1,7 +1,11 @@
 """All settings needed by reqpy"""
 # IMPORT MODULES
 from typing import NamedTuple
+import logging
 
+
+# logger for logging
+logger = logging.getLogger(__name__)
 
 # ########################################################################## #
 # ######################### REQUIREMENTS PARAMETERS ######################## #
@@ -16,18 +20,5 @@ class RequirementSettings(NamedTuple):
 
 
 class RequirementFileSettings(NamedTuple):
-    allowed_extensions = (".yml", ".yaml")  # allowed extensions
+    allowed_extensions = [".yml", ".yaml"]  # allowed extensions
     default_extension = ".yml"  # default extension during file creation
-
-
-class FolderStructure(NamedTuple):
-    folder_structure = (
-        "requirements",
-        "requirements/__links__",
-        "requirements/__DB__",
-        "requirements/__definitions__",
-        "requirements/__Annex__",
-        "requirements/__references__",
-    )
-    main_folder = "requirements"
-    

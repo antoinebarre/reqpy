@@ -1,52 +1,48 @@
 """This module provides the reqpy CLI."""
 
-from typing import Optional
-
 import typer
-from typing_extensions import Annotated
-
 from reqpy import __app_name__, __version__
 import reqpy
+from pathlib import Path
 
-app = typer.Typer()
+# initiate CLI
+app = typer.Typer(add_completion=False)
+
+
+@app.command(
+        short_help="Provide an analysis on the console of the reqpy database",
+        )
+def validate():
+    res = reqpy.validate_reqpy_database(
+        mainPath=Path(),
+        show_console=True
+    )
+    raise typer.Exit(code=not res)
+
+
+@app.command(
+        short_help=(
+            'delete the existing requirement database'
+            ' and create an empty database'
+        )
+    )
+def reset():
+    reqpy.reset_reqpy()
 
 
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"{__app_name__} v{__version__}")
         raise typer.Exit()
-def _sco_callback(value:bool) -> None:
-    if value:
-        print('allez le sco!!')
-        raise typer.Exit()
 
-
-@app.command(short_help='delete the existing requirement database')
-def delete():
-    reqpy.reset_reqpy()
 
 @app.callback()
 def common(
-    clx : typer.Context,
-    version:bool= typer.Option(
-        None, "--version",'-v',
+    clx: typer.Context,
+    version: bool = typer.Option(
+        None, "--version", '-v',
         callback=_version_callback,
         help="Provide version of the package"
     ),
-    sco:bool= typer.Option(
-        None, "--sco",'-sco',
-        callback=_sco_callback,
-        help="Provide sco message"
-    ),
 ):
-   pass
-#     version: Optional[bool] = typer.Option(
-#         None,
-#         "--version",
-#         "-v",
-#         help="Show the application's version and exit.",
-#         callback=_version_callback,
-#         is_eager=True,
-#     )
-# ) -> None:
-#     return
+    pass

@@ -11,11 +11,15 @@ from pydantic import BaseModel, Field, validator
 from pydantic.json import pydantic_encoder
 from .__settings import RequirementSettings, RequirementFileSettings
 from .utils.validation import has_punctuation_or_accent
+from .RequirementItems import RequirementRationale
 
 
 __all__ = [
     "Requirement",
 ]
+
+# logger for logging
+logger = logging.getLogger(__name__)
 
 # ############################ CUSTOM EXCEPTIONS ########################### #
 
@@ -58,7 +62,9 @@ class Requirement(BaseModel):
         default="Description of the requirement as Markdown"
     )
     rationale: str = Field(
-        default="Rationale of the requirement"
+        default=(
+            "Rationale of the requirement"
+            )
     )
 
     validation_status: str = "UNVALID"
@@ -107,7 +113,10 @@ class Requirement(BaseModel):
         """
         if not title[0].isalpha() or not title[0].isupper():
             raise ValueError(
-                'First character shall be an upper case letters (A-Z).'
+                (
+                 'First character shall be an upper case letters (A-Z). '
+                 f'Current: {title}'
+                 )
             )
         return title
 
@@ -255,6 +264,7 @@ class Requirement(BaseModel):
                 "or the file extension is not an allowed extension"
                 f"  (i.e. {RequirementFileSettings.allowed_extensions} )"
             )
+            logger.error(msg)
             raise RequirementFileError(msg)
 
     def write(
@@ -286,7 +296,7 @@ class Requirement(BaseModel):
                 f"The path {str(folderPath.absolute())}"
                 " is not an existing folder path"
             )
-            logging.error(msg)
+            logger.error(msg)
             raise RequiqrementFolderError(msg)
 
         fileName = self.get_valid_fileName()
@@ -311,7 +321,7 @@ class Requirement(BaseModel):
         with open(filePath, 'w+') as file:
             yaml.safe_dump(data_json, file)
 
-        logging.info(
+        logger.debug(
             f"The requirement file {filePath} is created"
         )
         return filePath
@@ -352,14 +362,14 @@ class Requirement(BaseModel):
 
             # rename file
             new_file_path = filePath.rename(new_file_path)
-            logging.info(
+            logging.debug(
                 (
                  f"Rename of the file {filePath} to {new_file_path}"
                 )
             )
             return new_file_path
         else:
-            logging.warning(
+            logging.debug(
                 (f"The file {filePath} has the already "
                  "the right name - no action ")
                  )

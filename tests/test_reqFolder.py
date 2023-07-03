@@ -68,23 +68,24 @@
 
 import pytest
 from pathlib import Path
-from reqpy.__settings import FolderStructure, RequirementFileSettings
-from reqpy.database import ReqFolder, DataBaseError
+from reqpy.__settings import RequirementFileSettings
+from reqpy.folders import FolderStructure
+from reqpy.database import ReqFolder, RequirementsDataBaseError
 import shutil
 
 @pytest.fixture
-def req_folder(tmp_path):
+def req_folder(tmp_path) -> ReqFolder:
     # Create a temporary directory for testing
-    rootdir = tmp_path / "requirements"
+    rootdir:Path = tmp_path / "requirements"
     rootdir.mkdir()
 
     # Create the required folder structure
-    for folder in FolderStructure.folder_structure:
+    for folder in FolderStructure().foldersList:
         (rootdir / folder).mkdir()
 
     return ReqFolder(rootdir=rootdir)
 
-def test_rootdir_must_be_a_folder_existing_path(req_folder):
+def test_rootdir_must_be_a_folder_existing_path(req_folder:ReqFolder):
     # Existing folder path should not raise an error
     assert ReqFolder(rootdir=req_folder.rootdir)
 
@@ -92,35 +93,35 @@ def test_rootdir_must_be_a_folder_existing_path(req_folder):
     with pytest.raises(ValueError):
         ReqFolder(rootdir=req_folder.rootdir / "non_existing_folder")
 
-def test_create_dirs(req_folder):
+def test_create_dirs(req_folder:ReqFolder):
     req_folder.create_dirs()
 
     # Check if all the folders are created
-    for folder in FolderStructure.folder_structure:
+    for folder in FolderStructure().foldersList:
         assert (req_folder.rootdir / folder).is_dir()
 
-def test_clean_dirs(req_folder):
+def test_clean_dirs(req_folder:ReqFolder):
     req_folder.clean_dirs()
 
     # Check if all the folders are deleted
-    for folder in FolderStructure.folder_structure:
+    for folder in FolderStructure().foldersList:
         assert not (req_folder.rootdir / folder).exists()
 
-def test_get_missing_drectories(req_folder):
+def test_get_missing_drectories(req_folder:ReqFolder):
     missing_folders = req_folder.get_missing_drectories()
 
     # There should be no missing folders
     assert len(missing_folders) == 0
 
-def test_get_list_of_files(req_folder):
+def test_get_list_of_files(req_folder:ReqFolder):
     files = req_folder.get_list_of_files()
 
     # Since no files are added, the list should be empty
     assert len(files) == 0
 
-def test_get_incorrect_files(req_folder):
+def test_get_incorrect_files(req_folder:ReqFolder):
     # Add some files with incorrect extensions
-    incorrect_folder = req_folder.rootdir / FolderStructure.main_folder
+    incorrect_folder = req_folder.rootdir / FolderStructure().rootFolder
     (incorrect_folder / "file1.txt").touch()
     (incorrect_folder / "file2.py").touch()
 
@@ -129,33 +130,33 @@ def test_get_incorrect_files(req_folder):
     # Two files with incorrect extensions are added
     assert len(incorrect_files) == 2
 
-def test_is_correct_files_false(req_folder):
+def test_is_correct_files_false(req_folder:ReqFolder):
     # Add some files with incorrect extensions
-    incorrect_folder = req_folder.rootdir / FolderStructure.main_folder
+    incorrect_folder = req_folder.rootdir / FolderStructure().rootFolder
     (incorrect_folder / "file1.txt").touch()
     (incorrect_folder / "file2.py").touch()
 
     assert not req_folder.is_correct_files()
 
-def test_is_correct_files_true(req_folder):
+def test_is_correct_files_true(req_folder:ReqFolder):
     # Add some files with correct extensions
-    correct_folder = req_folder.rootdir / FolderStructure.main_folder
+    correct_folder = req_folder.rootdir / FolderStructure().rootFolder
     (correct_folder / "file1.yml").touch()
     (correct_folder / "file2.yml").touch()
 
     assert req_folder.is_correct_files()
 
-def test_is_correct_folders(req_folder):
+def test_is_correct_folders(req_folder:ReqFolder):
     # Remove one of the required folders
-    shutil.rmtree(req_folder.rootdir / FolderStructure.folder_structure[0])
+    shutil.rmtree(req_folder.rootdir / FolderStructure().annex_folder)
 
     assert not req_folder.is_correct_folders()
 
-def test_get_list_of_files_with_missing_folders(req_folder):
+def test_get_list_of_files_with_missing_folders(req_folder:ReqFolder):
     # Create a ReqFolder object without creating the required folders
     
     shutil.rmtree(req_folder.rootdir / "requirements")
 
-    with pytest.raises(DataBaseError):
+    with pytest.raises(RequirementsDataBaseError):
         req_folder.get_list_of_files()
 
