@@ -19,6 +19,9 @@ class RequirementSettings(NamedTuple):
     validation_status = ("VALID", "UNVALID", "INVALID")
 
 
+DEFAULT_EXTENSION = ".yml"
+
+
 class RequirementFileSettings(NamedTuple):
     allowed_extensions = [".yml", ".yaml"]  # allowed extensions
     default_extension = ".yml"  # default extension during file creation

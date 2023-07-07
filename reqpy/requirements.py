@@ -2,43 +2,30 @@
 
 # IMPORT SECTION
 from __future__ import annotations
-import yaml
 import logging
 from pathlib import Path
-from typing import List
-from datetime import datetime
 from pydantic import BaseModel, Field, validator
-from pydantic.json import pydantic_encoder
-from .__settings import RequirementSettings, RequirementFileSettings
+from .__settings import RequirementSettings
 from .utils.validation import has_punctuation_or_accent
-from .RequirementItems import RequirementRationale
+from .__genericItem import GenericItem
 
 
 __all__ = [
     "Requirement",
 ]
 
+# TODO : add DEFAULT_DESCRIPTION
+
+
 # logger for logging
 logger = logging.getLogger(__name__)
 
-# ############################ CUSTOM EXCEPTIONS ########################### #
 
-
-class RequirementFileError(Exception):
-    """Manage Requirement file exception."""
+class RequirementError(Exception):
     pass
 
 
-class RequiqrementFolderError(Exception):
-    """Manage Requirement folder exception."""
-    pass
-
-# ########################################################################## #
-# ############################ REQUIREMENT CLASS ########################### #
-# ########################################################################## #
-
-
-class Requirement(BaseModel):
+class Requirement(BaseModel, GenericItem):
     """
     Represents a requirement with title, content, validation status,
     and creation date.
@@ -52,10 +39,10 @@ class Requirement(BaseModel):
 
     """
 
+    # ------------------------------- ATTRIBUTES ------------------------- #
     title: str = Field(
         min_length=RequirementSettings.min_title_length,
-        max_length=RequirementSettings.max_title_length,
-        default="Requirement Title"
+        max_length=RequirementSettings.max_title_length
     )
     detail: str = Field(
         max_length=RequirementSettings.max_detail_length,
@@ -68,7 +55,39 @@ class Requirement(BaseModel):
     )
 
     validation_status: str = "UNVALID"
-    creation_date: datetime = datetime.now()
+
+    class Config:
+        """Configuration class for the Requirement class.
+        """
+        allow_mutation = True  # allow mutation for the class Requirement
+        validate_assignment = True  # activate the validation for assignement
+        extra = 'forbid'  # unknow field is not permitted for the requirement
+
+    # ------------------------------- CONSTRUCTOR ------------------------#
+
+    def __init__(
+            self,
+            title: str,
+            detail: str = "Description of the requirement as Markdown",
+            rationale: str = "Rationale of the requirement",
+            validation_status: str = "UNVALID",
+            **kwargs
+            ):
+
+        super().__init__(
+            title=title,
+            detail=detail,
+            rationale=rationale,
+            validation_status=validation_status,
+            **kwargs
+        )
+
+    def __str__(self):
+        return self._toStr(
+            ObjectName="Requirement",
+        )
+
+    # ----------------------------- VALIDATORS ----------------------------- #
 
     @validator('validation_status')
     def status_is_conform(cls, value: str):
@@ -143,14 +162,7 @@ class Requirement(BaseModel):
             )
         return title
 
-    class Config:
-        """Configuration class for the Requirement class.
-        """
-        allow_mutation = True  # allow mutation for the class Requirement
-        validate_assignment = True  # activate the validation for assignement
-        extra = 'forbid'  # unknow field is not permitted for the requirement
-
-# ############################## FILE HANDLING ############################# #
+# ------------------------------ FILE NAME ------------------------------ #
 
     def get_valid_fileName(self) -> str:
         """
@@ -160,9 +172,7 @@ class Requirement(BaseModel):
             str: The valid file name.
 
         """
-
-        return (self.title.replace(" ", "_") +
-                RequirementFileSettings.default_extension)
+        return self.title.replace(" ", "_")
 
     def is_valid_fileName(
             self,
@@ -178,209 +188,54 @@ class Requirement(BaseModel):
             bool: True if the file name is valid, False otherwise.
 
         """
-        filePath = self.validatePath(filePath)
+        filePath = self.validateCorrectFileExtension(filePath)
 
         valid_name = self.get_valid_fileName()
-        return filePath.name == valid_name
+        return filePath.stem == valid_name
+
+# -------------------------- READ / WRITE TOOLS ------------------------- #
 
     @staticmethod
-    def validatePath(
-            filePath: Path
-            ) -> Path:
-        """
-        Validate if the input is a mutable file path.
+    def read(
+            filePath: Path,
+            ) -> Requirement:
 
-        Args:
-            filePath (Path): The file path to validate.
-
-        Returns:
-            Path: The validated file path.
-
-        Raises:
-            TypeError: If the provided file path information is not mutable.
-
-        """
+        data = Requirement.read2dict(
+            filePath=filePath)
         try:
-            filePath = Path(filePath)
+            new_req = Requirement(**data)
         except Exception as e:
-            raise TypeError(
-                "The provided file path information shall be mutable " +
-                "to a pathlib.Path object. " +
-                f"Following exception is raised:\n{str(e)}")
-        return filePath
-
-    @staticmethod
-    def is_valid_file_extension(
-            filePath: Path
-            ) -> bool:
-        """
-        Check if the file extension of a Path is valid to write a requirement.
-
-        Args:
-            filePath (Path): The file path to validate.
-
-        Returns:
-            bool: True if the file extension is valid, False otherwise.
-
-        """
-        filePath = Requirement.validatePath(filePath)
-        # get file extension
-        file_extension = filePath.suffix
-
-        return (
-            file_extension != "" and
-            file_extension in RequirementFileSettings.allowed_extensions)
-
-# ########################### READ / WRITE TOOLS ########################### #
-
-    @staticmethod
-    def read(filePath: Path) -> Requirement:
-        """
-        Read a file to extract the requirement object.
-
-        Args:
-            filePath (Path): The file path to read.
-
-        Returns:
-            Requirement: The extracted requirement object.
-
-        Raises:
-            RequirementFileError: If the file does not exist
-              or has an invalid extension.
-
-        """
-
-        # validate filePath
-        if (
-            Requirement.is_valid_file_extension(filePath=filePath) and
-            filePath.is_file()
-        ):
-            with open(filePath, 'r') as file:
-                datamap = yaml.safe_load(file)
-            return Requirement(**datamap)
-        else:
-            msg = (
-                f"The file [{str(filePath.absolute())}] does not exist "
-                "or the file extension is not an allowed extension"
-                f"  (i.e. {RequirementFileSettings.allowed_extensions} )"
+            raise RequirementError(
+                f"Impossible to parse the YAML file {filePath}" +
+                f" due to this error: \n{str(e)}"
             )
-            logger.error(msg)
-            raise RequirementFileError(msg)
+        return new_req
 
     def write(
             self,
             folderPath: Path = Path(),
             ) -> Path:
-        """
-        Write the requirement in a YAML file with the appropriate name.
 
-        Args:
-            folderPath (Path, optional): The folder path to write the file.
-                Defaults to Path().
+        # validate folderPath
+        folderPath = self.validateExistingFolder(folderPath)
 
-        Returns:
-            Path : path of the created file
+        # build the filename
+        fileName = (self.get_valid_fileName() +
+                    self._defaultExtension())
 
-        Raises:
-            RequiqrementFolderError: If the path is not
-            an existing folder path.
-
-        """
-
-        # create the Path to the file to write
-        folderPath = self.validatePath(folderPath)
-
-        if not folderPath.is_dir():
-            # raise an error if the path is not an existing folder path
-            msg = (
-                f"The path {str(folderPath.absolute())}"
-                " is not an existing folder path"
-            )
-            logger.error(msg)
-            raise RequiqrementFolderError(msg)
-
-        fileName = self.get_valid_fileName()
+        # build the file path
         filePath = folderPath / fileName
 
-        def str_presenter(dumper, data):
-            """Configures YAML for dumping multiline strings."""
-            if data.count('\n') > 0:  # check for multiline string
-                return dumper.represent_scalar(
-                    'tag:yaml.org,2002:str',
-                    data,
-                    style='|'
-                    )
-            return dumper.represent_scalar('tag:yaml.org,2002:str', data)
-
-        yaml.add_representer(str, str_presenter)
-        yaml.representer.SafeRepresenter.add_representer(
-            str, str_presenter)  # to use with safe_dump
-
-        data_json = pydantic_encoder(self)
-
-        with open(filePath, 'w+') as file:
-            yaml.safe_dump(data_json, file)
-
-        logger.debug(
-            f"The requirement file {filePath} is created"
-        )
+        self._generic_write(
+            filePath=filePath,
+            )
         return filePath
 
-    @staticmethod
-    def rename(
-         filePath: Path
-         ) -> Path:
-        """
-        Rename the requirement file if necessary.
-
-        Args:
-            filePath (Path): The file path to rename.
-
-        Returns:
-            Path: The new file path after renaming.
-
-        Raises:
-            RequirementFileError: If the file is not a requirement file.
-
-        """
-
-        if not Requirement.is_RequirementFile(filePath):
-            msg = (
-                f"The file {str(filePath.absolute())} is "
-                "not a requirement file"
-            )
-            logging.error(msg)
-            raise RequirementFileError(msg)
-
-        if not Requirement.is_valid_RequirementFile_Name(filePath):
-            # Specify the folder path and the new file name
-            folder_path = filePath.parent
-            new_file_name = Requirement.read(filePath).get_valid_fileName()
-
-            # Create the Path objects for the new file
-            new_file_path = folder_path / new_file_name
-
-            # rename file
-            new_file_path = filePath.rename(new_file_path)
-            logging.debug(
-                (
-                 f"Rename of the file {filePath} to {new_file_path}"
-                )
-            )
-            return new_file_path
-        else:
-            logging.debug(
-                (f"The file {filePath} has the already "
-                 "the right name - no action ")
-                 )
-            return filePath
-
-# ########################## FILE VALIDATION TOOLS ######################### #
-
+# ------------------------ FILE VALIDATION TOOLS ------------------------ #
     @staticmethod
     def get_file_Errors(
          filePath: Path
-         ) -> List[str]:
+         ) -> str:
         """
         Get a list of errors found in the requirement file.
 
@@ -391,59 +246,23 @@ class Requirement(BaseModel):
             List[str]: The list of errors found in the file.
 
         """
-
-        # Initiate errors list
-        errors: List[str] = []
-
-        # check if the file exist
-        if not filePath.is_file():
-            msg: str = (
-                f"The path {str(filePath)} is not an existing file"
-            )
-            errors.append(msg)
-            return errors
-
-        # check if an appropriate extension
-        if not Requirement.is_valid_file_extension(filePath):
-            msg: str = (
-                f"The extension {filePath.suffix} is not valid"
-            )
-            errors.append(msg)
-            return errors
-
-        # Impossible to map the yaml file
         try:
             Requirement.read(
-                filePath=filePath,
-                )
-        except Exception as e:
-            msg = (
-                "The formating of the files is not "
-                "correct with the following problems:\n"
-                f"{str(e)}"
+                filePath=filePath
             )
-            errors.append(msg)
-
-        return errors
+            return ''
+        except Exception as e:
+            errorMsg = str(e)
+            return errorMsg
 
     @staticmethod
-    def is_RequirementFile(
+    def is_ValidRequirementFile(
          filePath: Path
          ) -> bool:
-        """
-        Check if the file is a valid requirement file.
-
-        Args:
-            filePath (Path): The file path to validate.
-
-        Returns:
-            bool: True if the file is a requirement file, False otherwise.
-
-        """
-        if len(Requirement.get_file_Errors(filePath)):
-            return False  # List is not empty
+        if Requirement.get_file_Errors(filePath) == "":
+            return True  # List is not empty
         else:
-            return True
+            return False
 
     @staticmethod
     def is_valid_RequirementFile_Name(
@@ -460,3 +279,18 @@ class Requirement(BaseModel):
 
         """
         return Requirement.read(filePath).is_valid_fileName(filePath)
+
+    @staticmethod
+    def get_fileName_error(
+                filePath: Path,
+                ) -> str:
+        if Requirement.read(filePath).is_valid_fileName(filePath):
+            return ""
+        else:
+            validName = Requirement.read(filePath).get_valid_fileName()
+            msg = (
+                "The file has an invalid file name\n"
+                f"Current Name : {filePath.stem}\n"
+                f"Valid Name: {validName}"
+                )
+            return msg
