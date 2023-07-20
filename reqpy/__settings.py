@@ -15,11 +15,12 @@ logger = logging.getLogger(__name__)
 class RequirementSettings(NamedTuple):
     min_title_length = 8  # min size of the title
     max_title_length = 60  # max size of the title
-    max_detail_length = 2000  # maximum size of the req description
+    max_description_length = 2000  # maximum size of the req description
     validation_status = ("VALID", "UNVALID", "INVALID")
 
 
 DEFAULT_EXTENSION = ".yml"
+DEFAULT_EXTENSION_REPORT = ".md"
 
 
 class RequirementFileSettings(NamedTuple):

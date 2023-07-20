@@ -2,23 +2,24 @@
 
 # IMPORT SECTION
 from __future__ import annotations
-import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, validator
-from .__settings import RequirementSettings
-from .utils.validation import has_punctuation_or_accent
+from .__settings import RequirementSettings, DEFAULT_EXTENSION_REPORT
+from .tools.__string import has_punctuation_or_accent
 from .__genericItem import GenericItem
+from .__DB import GenericSubDB, FileError
+from .folders import FolderStructure
+from loguru import logger as log
+from .__logging import Myconsole
+from .markdown import MDText
 
 
 __all__ = [
     "Requirement",
+    "RequirementFolder",
 ]
 
 # TODO : add DEFAULT_DESCRIPTION
-
-
-# logger for logging
-logger = logging.getLogger(__name__)
 
 
 class RequirementError(Exception):
@@ -32,7 +33,7 @@ class Requirement(BaseModel, GenericItem):
 
     Attributes:
         title (str): The title of the requirement.
-        detail (str): The content of the requirement.
+        description (str): The content of the requirement.
         validation_status (ValidationStatus): The validation status of
          the requirement.
         creation_date (datetime): The creation date of the requirement.
@@ -44,8 +45,8 @@ class Requirement(BaseModel, GenericItem):
         min_length=RequirementSettings.min_title_length,
         max_length=RequirementSettings.max_title_length
     )
-    detail: str = Field(
-        max_length=RequirementSettings.max_detail_length,
+    description: str = Field(
+        max_length=RequirementSettings.max_description_length,
         default="Description of the requirement as Markdown"
     )
     rationale: str = Field(
@@ -68,7 +69,7 @@ class Requirement(BaseModel, GenericItem):
     def __init__(
             self,
             title: str,
-            detail: str = "Description of the requirement as Markdown",
+            description: str = "Description of the requirement as Markdown",
             rationale: str = "Rationale of the requirement",
             validation_status: str = "UNVALID",
             **kwargs
@@ -76,7 +77,7 @@ class Requirement(BaseModel, GenericItem):
 
         super().__init__(
             title=title,
-            detail=detail,
+            description=description,
             rationale=rationale,
             validation_status=validation_status,
             **kwargs
@@ -195,6 +196,7 @@ class Requirement(BaseModel, GenericItem):
 
 # -------------------------- READ / WRITE TOOLS ------------------------- #
 
+    @log.catch(reraise=True)
     @staticmethod
     def read(
             filePath: Path,
@@ -211,17 +213,18 @@ class Requirement(BaseModel, GenericItem):
             )
         return new_req
 
+    @log.catch(reraise=True)
     def write(
             self,
             folderPath: Path = Path(),
             ) -> Path:
 
         # validate folderPath
-        folderPath = self.validateExistingFolder(folderPath)
+        folderPath = Requirement.validateExistingFolder(folderPath)
 
         # build the filename
         fileName = (self.get_valid_fileName() +
-                    self._defaultExtension())
+                    self._defaultExtension)
 
         # build the file path
         filePath = folderPath / fileName
@@ -294,3 +297,170 @@ class Requirement(BaseModel, GenericItem):
                 f"Valid Name: {validName}"
                 )
             return msg
+
+# -------------------------- EXPORT TOOLS -------------------------- #
+    def toMD(self) -> str:
+
+        listOfAttributes = self.listAttributes()
+
+        # initiate MK object
+        mk = MDText()
+
+        # create title
+        mk.add_title(self.title)
+
+        # create paragraphs
+        for attribute in listOfAttributes:
+            if attribute != "title":
+                mk.add_header(level=2,title=attribute.upper())
+                mk.add_paragraph(text=getattr(self, attribute))
+        return str(mk)
+
+    def toMDFile(
+            self,
+            directoryPath: Path
+            ) -> Path:
+
+        newMDFile = directoryPath / (
+            self.get_valid_fileName() +
+            DEFAULT_EXTENSION_REPORT
+            )
+        # create directory if necessary
+        directoryPath.mkdir(parents=True, exist_ok=True)
+
+        # write file
+        with newMDFile.open("w+", encoding="utf-8") as f:
+            f.write(self.toMD())
+
+        return newMDFile
+
+
+class RequirementFolder(GenericSubDB):
+    def __init__(self, mainFolder: Path = Path()):
+
+        # get the Reqpy folders structure
+        foldersStructure = FolderStructure(mainFolder)
+
+        super().__init__(
+            folderPath=mainFolder / foldersStructure.requirements_folder,
+            allowedExtensions=[Requirement._defaultExtension],
+            allowSubfolders=True,
+            allowAdditionalFiles=True)
+
+# -------------------------- EXPORT TOOLS -------------------------- #
+
+    @log.catch(reraise=True)
+    def generate_MD(
+            self,
+            MDPath: Path,
+            show_console: bool = False
+            ):
+        # console
+        Myconsole.apps(
+            msg="Generate Markdow Files :",
+            show_console=show_console,
+        )
+
+        # target info :
+        msg = f"Targeted Folder:{str(MDPath.absolute())}"
+        Myconsole.info(
+            msg=msg,
+            show_console=show_console,
+        )
+        log.trace(msg)
+
+        # list files
+        list_files = self.list_valid_files()
+
+        # logging
+        infoList = [str(fileName.absolute()) for fileName in list_files]
+        log.trace(
+            f"List of Yaml Files :\n {infoList}")
+        Myconsole.info(
+            msg=f"Number of files to generate: {len(list_files)}",
+            show_console=show_console
+        )
+
+        # create the progress bar
+        sequence = Myconsole.progressBar(
+            sequence=list_files,
+            description="Generate Markdown files...",
+            show_console=show_console
+        )
+
+        for filePath in sequence:
+
+            req = Requirement.read(
+                filePath=filePath)
+
+            newMDFolder = MDPath / filePath.relative_to(self.folderPath).parent
+
+            newFile = req.toMDFile(
+                directoryPath=newMDFolder,
+            )
+            # Logging
+            log.trace(f"Created Markdown file: {newFile}")
+
+        # copy additional files
+        self.copy_additional_files(
+            destinationDir=MDPath,
+            show_console=show_console)
+
+    # ========================== VALIDATIONS STATUS ========================= #
+
+    @log.catch(reraise=True)
+    def generate_status(
+            self,
+            show_console: bool = True,
+            ) -> list[FileError]:
+
+        Myconsole.apps(
+            msg="Generate Requirement Files status :",
+            show_console=show_console,
+        )
+
+        # list files
+        list_files = self.list_valid_files()
+
+        # logging
+        infoList = [str(fileName.absolute()) for fileName in list_files]
+        log.trace(
+            f"List of Yaml Files to inspect :\n {infoList}")
+        Myconsole.info(
+            msg=f"Number of files to inspect: {len(list_files)}",
+            show_console=show_console
+        )
+
+        # create the progress bar
+        sequence = Myconsole.progressBar(
+            sequence=list_files,
+            description="Inspect Requirement files...",
+            show_console=show_console
+        )
+
+        # Initiate the outputs
+        errorStatus = []
+
+        for file in sequence:
+            try:
+                Requirement.read(filePath=file)
+                log.trace(
+                    f"OK for {file}"
+                )
+            except Exception as e:
+
+                msg = f"KO for {file} due to :\n{str(e)}"
+
+                log.trace(msg)
+                Myconsole.ko(
+                    msg=msg,
+                    show_console=show_console,
+                )
+
+                errorStatus.append(
+                    FileError(
+                        filePath=file,
+                        errorMsg=str(e)
+                    )
+                )
+        return errorStatus

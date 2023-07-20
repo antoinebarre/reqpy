@@ -1,15 +1,13 @@
-import logging
+from loguru import logger as log
 from pathlib import Path
 from typing import Dict
+from pydantic import BaseModel
 import yaml
 from .__settings import DEFAULT_EXTENSION
 
 
 # import all option
 __all__ = []
-
-# logging
-logger = logging.getLogger(__name__)
 
 
 class ItemFileError(Exception):
@@ -23,11 +21,11 @@ class ItemFolderError(Exception):
 
 
 class GenericItem():
-
+    _defaultExtension = DEFAULT_EXTENSION
     # ------------------------------- CONSTRUCTOR -------------------------- #
 
-    def _defaultExtension(self) -> str:
-        return DEFAULT_EXTENSION
+    def listAttributes(self) -> list[str]:
+        return list(vars(self).keys())
 
 # ---------------------------------- TOOLS --------------------------------- #
     def _toStr(
@@ -35,7 +33,7 @@ class GenericItem():
             ObjectName: str = "Object",
               ) -> str:
 
-        list_attributeName = self.__dict__.keys()  # list(vars(self).keys())
+        list_attributeName = self.listAttributes()
 
         attribute_Value = [
             (
@@ -49,7 +47,7 @@ class GenericItem():
         return msg
 
     def __toStrdict(self) -> Dict[str, str]:
-        list_attributeName = list(vars(self).keys())
+        list_attributeName = self.listAttributes()
 
         return {
             attributeName: str(getattr(self, attributeName))
@@ -79,7 +77,7 @@ class GenericItem():
         return (file_extension == allowedExtension)
 
 # ---------------------------- VALIDATION TOOLS ---------------------------- #
-
+    @log.catch(reraise=True)
     @staticmethod
     def validatePath(
             filePath: Path
@@ -106,6 +104,7 @@ class GenericItem():
                 f"Following exception is raised:\n{str(e)}")
         return filePath
 
+    @log.catch(reraise=True)
     @staticmethod
     def validateExistingFolder(
             folderPath: Path,
@@ -120,10 +119,10 @@ class GenericItem():
                 f"The path {str(folderPath.absolute())}"
                 " is not an existing folder path"
             )
-            logger.error(msg)
             raise ItemFolderError(msg)
         return folderPath
 
+    @log.catch(reraise=True)
     @staticmethod
     def validateCorrectFileExtension(
             filePath: Path,
@@ -137,9 +136,9 @@ class GenericItem():
                     "an allowed extension"
                     f"  (i.e. {DEFAULT_EXTENSION} )"
             )
-            logger.error(msg)
             raise ItemFileError(msg)
 
+    @log.catch(reraise=True)
     @staticmethod
     def validateExistingFile(
             filePath: Path
@@ -152,17 +151,17 @@ class GenericItem():
             return filePath
         else:
             msg = f"The file {filePath.absolute()} does not exist"
-            logger.error(msg)
             raise ItemFileError(msg)
 
 # -------------------------------- I/O FILES ------------------------------- #
+    @log.catch(reraise=True)
     def _generic_write(
             self,
             filePath: Path = Path(),
             ) -> Path:
 
         # validate filePath extension
-        filePath = self.validateCorrectFileExtension(filePath)
+        filePath = GenericItem.validateCorrectFileExtension(filePath)
 
         # create a presenter for multiline
         def str_presenter(dumper, data):
@@ -182,13 +181,15 @@ class GenericItem():
         data = self.__toStrdict()
 
         with open(filePath, 'w+') as file:
-            yaml.safe_dump(data, file)
+            yaml.safe_dump(data, file,
+                           sort_keys=False)
 
-        logger.debug(
+        log.trace(
             f"The file {filePath} is created"
         )
         return filePath
 
+    @log.catch(reraise=True)
     @staticmethod
     def read2dict(filePath: Path) -> Dict:
         """
@@ -218,3 +219,14 @@ class GenericItem():
                 f"Impossible to parse the YAML file {filePath.absolute()}" +
                 f"due to : {str(e)}"
                 )
+
+
+class MarkdownContents(BaseModel):
+    content: str
+
+    class Config:
+        """Configuration class for the Requirement class.
+        """
+        allow_mutation = True  # allow mutation for the class Requirement
+        validate_assignment = True  # activate the validation for assignement
+        extra = 'forbid'  # unknow field is not permitted for the requirement
