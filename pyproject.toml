@@ -1,41 +1,21 @@
 [tool.poetry]
 name = "reqpy"
 version = "0.1.0"
-description = "Requirements management tools based on files (Yaml) and Python approach"
+description = "system requirement maangement tool based on YAML files"
 authors = ["Antoine Barre <antoine.barre@gmail.com>"]
+license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-pytest = "^7.3.1"
-flake8 = "^6.0.0"
-scipy = "^1.10.1"
-numpy = "^1.24.3"
-pyyaml = "^6.0"
-pylatex = "^1.4.1"
-click = "^8.1.3"
-typeguard = "^4.0.0"
-pydantic = "^1.10.8"
-pylint-pydantic = "^0.1.8"
-mock = "^5.0.2"
-pylance = "^0.4.20"
-typer = "^0.9.0"
-faker = "^18.10.1"
-mdgen = "^0.1.10"
-pytest-cov = "^4.1.0"
-rich = "^13.4.2"
-loguru = "^0.7.0"
-tqdm = "^4.65.0"
-mkdocs = "^1.4.3"
-mkdocs-material = "^9.1.18"
-mkdocs-pdf-export-plugin = "^0.5.10"
-weasyprint = "^59.0"
-mdutils = "^1.6.0"
+python = "^3.11"
 
 
 [tool.poetry.group.dev.dependencies]
-ipykernel = "^6.23.1"
-pylint = "^2.17.4"
+flake8 = "^6.1.0"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
 
 [build-system]
 requires = ["poetry-core"]
