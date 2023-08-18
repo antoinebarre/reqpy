@@ -161,6 +161,9 @@ class GenericItem():
 
         # validate filePath
         filePath = validateFileExistence(filePath)
+        filePath = validateCorrectFileExtension(
+            filePath=filePath,
+            allowedExtension=DEFAULT_REQPY_FILE_EXTENSION)
 
         try:
             with open(filePath, 'r') as file:

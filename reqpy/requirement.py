@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .__genericItem import GenericItem
 from .settings import RequirementSettings
-from .exception import RequirementException, ReqpyIOException
+from .exception import ReqpyIOException
 from .tools.strings import has_punctuation_or_accent
 
 from .requirementItems import ValidationStatus
