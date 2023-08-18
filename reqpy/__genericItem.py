@@ -113,7 +113,7 @@ class GenericItem():
         # validate filePath extension
         filePath = validateCorrectFileExtension(
             filePath,
-            allowedExtension=DEFAULT_REQPY_FILE_EXTENSION)
+            validExtension=DEFAULT_REQPY_FILE_EXTENSION)
 
         # create a presenter for multiline
         def str_presenter(dumper, data):
@@ -163,7 +163,7 @@ class GenericItem():
         filePath = validateFileExistence(filePath)
         filePath = validateCorrectFileExtension(
             filePath=filePath,
-            allowedExtension=DEFAULT_REQPY_FILE_EXTENSION)
+            validExtension=DEFAULT_REQPY_FILE_EXTENSION)
 
         try:
             with open(filePath, 'r') as file:

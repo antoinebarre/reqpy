@@ -16,3 +16,7 @@ class ReqpyPathException(ClickException):
 class ReqpyIOException(ClickException):
     """Exception raised by file IO errors"""
     pass
+
+
+class ReqpyDBException(ClickException):
+    """Exception raised during the handling of file as database"""

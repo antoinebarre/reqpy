@@ -30,7 +30,7 @@ def generic_item_instance():
     return DummyClass(A="test\ntoto",B=1.3,C=False,D=DummyEnum.UNVALID)
 
 
-class Test_RequirementClass():
+class Test_GenericClass():
     def test_generic_item_str(self,generic_item_instance):
         expected_output = (
             ">>> DummyClass Contents\n"
