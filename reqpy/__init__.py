@@ -8,6 +8,9 @@ __version__ = "0.1.0"
 from loguru import logger
 import sys
 
+from .requirement import Requirement
+from .requirementItems import *
+
 logger_format = (
     "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
     "<level>{level: <8}</level> | "
@@ -18,3 +21,5 @@ logger.configure(extra={"ip": "", "user": ""})  # Default values
 logger.remove()
 logger.add(sys.stderr, format=logger_format, level="WARNING")
 logger.add("loguru.log", format=logger_format, level="TRACE", rotation="10 MB")
+
+# Module import
