@@ -6,6 +6,8 @@ import string
 
 __all__ = [
     "has_punctuation_or_accent",
+    "generate_paragraph",
+    "generate_title",
 ]
 
 
@@ -81,11 +83,13 @@ def generate_paragraph(
     Generate a paragraph of Lorem Ipsum with a maximum number of characters.
 
     Args:
-        max_characters (int): The maximum number of characters allowed in the
-                                generated paragraph.
+        max_characters (int): The maximum number of characters allowed in the generated paragraph.
 
     Returns:
         str: A randomly generated paragraph.
+
+    Raises:
+        ValueError: If max_characters is not strictly greater than 0.
     """
     if max_characters <= 0:
         raise ValueError('max number shall be strictly greater than 0')
@@ -107,6 +111,19 @@ def generate_title(
      min_characters: int,
      max_characters: int,
         ) -> str:
+    """
+    Generate a title with a random number of words and characters within the given limits.
+
+    Args:
+        min_characters (int): The minimum number of characters for the title.
+        max_characters (int): The maximum number of characters for the title.
+
+    Returns:
+        str: A randomly generated title.
+
+    Raises:
+        ValueError: If min_characters is negative or if max_characters is less than min_characters.
+    """
     if min_characters < 0:
         raise ValueError('min number shall be greater or equal to 0')
 

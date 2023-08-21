@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
+from reqpy.tools.status import CheckStatus
 
 from .__genericItem import GenericItem
 from .settings import RequirementSettings
@@ -174,6 +175,42 @@ class Requirement(BaseModel, GenericItem):
 # ---------------------- FILE VALIDATION TOOLS --------------------- #
 
     @staticmethod
+    def validateRequirementFile(
+            filePath: Path
+            ) -> CheckStatus:
+        """
+        Validates the given requirement file.
+
+        This method reads the content of a requirement file and attempts to
+        create a `Requirement` instance from it. If successful, it returns a
+        `CheckStatus` object indicating that the file is valid. If the content
+        cannot be parsed or if an exception occurs during the instantiation of
+        the `Requirement` instance, the method returns a `CheckStatus` object
+        indicating that the file is invalid and includes the error message.
+
+        Args:
+            filePath (Path): The path to the requirement file to be validated.
+
+        Returns:
+            CheckStatus: A `CheckStatus` object indicating whether the file is
+                        valid and containing any error messages if applicable.
+        """
+        try:
+            Requirement.read(
+                filePath=filePath
+            )
+            return CheckStatus(
+                valid=True,
+                message=[]
+            )
+        except Exception as e:
+            errorMsg = str(e)
+            return CheckStatus(
+                valid=False,
+                message=[errorMsg]
+            )
+
+    @staticmethod
     def get_file_Errors(
          filePath: Path
          ) -> str:
@@ -242,19 +279,19 @@ class Requirement(BaseModel, GenericItem):
 #         return newMDFile
 
 
-# class RequirementFile(BaseModel):
-#     filePath: Path
-#     requirement: Requirement
+class RequirementFile(BaseModel):
+    filePath: Path
+    requirement: Requirement
 
-#     def __init__(
-#             self,
-#             filePath: Path):
-#         super().__init__(
-#             filePath=filePath,
-#             requirement=Requirement.read(filePath=filePath),
-#         )
+    def __init__(
+            self,
+            filePath: Path):
+        super().__init__(
+            filePath=filePath,
+            requirement=Requirement.read(filePath=filePath),
+        )
 
 
-# class RequirementSet(BaseModel):
-#     requirements: list[RequirementFile]
-#     requirementFolder: Path
+class RequirementSet(BaseModel):
+    requirements: list[RequirementFile]
+    requirementFolder: Path

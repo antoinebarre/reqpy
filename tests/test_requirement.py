@@ -142,5 +142,33 @@ def test_write_fake_requirement_file_multiple_times(tmp_path: Path):
         assert file_path.is_file()
         assert Requirement.is_ValidRequirementFile(file_path)
 
+def test_validate_requirement_file():
+    # Valid Requirement
+    valid_requirement = Requirement(
+        title="Valid Requirement",
+        description="This is a valid requirement.",
+        rationale="Valid requirement rationale."
+    )
+    valid_file_path = Path("valid_requirement.yml")
+    valid_requirement.write(filePath=valid_file_path)
+    
+    # Invalid Requirement
+    invalid_file_path = Path("invalid_requirement.yml")
+    with open(invalid_file_path, "w") as f:
+        f.write("This is not a valid YAML content.")
+    
+    # Test valid requirement file
+    valid_status = Requirement.validateRequirementFile(filePath=valid_file_path)
+    assert valid_status.valid == True
+    assert valid_status.message == []
+    
+    # Test invalid requirement file
+    invalid_status = Requirement.validateRequirementFile(filePath=invalid_file_path)
+    assert invalid_status.valid == False
+    assert len(invalid_status.message) > 0
+
+    # Clean up
+    valid_file_path.unlink()
+    invalid_file_path.unlink()
 
 

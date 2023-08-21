@@ -1,7 +1,12 @@
-from reqpy.tools.strings import generate_title
+from reqpy.tools.status import CheckStatus
 
-print(generate_title(8,100))
+a1 = CheckStatus(valid=True, message=["ghffghfg"])
+print(a1)
 
-from reqpy.requirement import Requirement
+a2 = CheckStatus(valid=False, message=["dfgfdlkg,dfl,g:df;,g:;df,g,d"])
+print(a2)
 
-print(Requirement.createFakeRequirement())
+a3 = a1 + a2
+
+print(a3+a2)
+
