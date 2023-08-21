@@ -1,13 +1,7 @@
-from pathlib import Path
-import reqpy
+from reqpy.tools.strings import generate_title
 
-a = reqpy.Requirement(
-    title="Totoxcv dfg dfg vcxvxc"
-)
+print(generate_title(8,100))
 
-print(a)
+from reqpy.requirement import Requirement
 
-a.write(filePath=Path("titi.yml"))
-
-b = reqpy.Requirement.read(filePath=Path("titi.yml"))
-print(b)
+print(Requirement.createFakeRequirement())

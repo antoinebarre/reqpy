@@ -69,7 +69,8 @@ def is_valid_file_extension(
 
     Raises:
         TypeError: If validExtension is not a string or a list of strings.
-        ValueError: If any extension in validExtension is not a string starting with a dot.
+        ValueError: If any extension in validExtension is not a string
+        starting with a dot.
 
     """
     # convert to list for handling
@@ -110,7 +111,7 @@ def validateCorrectFileExtension(
 
     Args:
         filePath (Path): The file path to validate.
-        validExtension (str): The allowed file extension.
+        validExtension (Union[str, List[str]]): The allowed file extension(s).
 
     Returns:
         Path: The input path if the extension is valid.
@@ -119,7 +120,6 @@ def validateCorrectFileExtension(
         ReqpyPathException: If the extension is not allowed.
 
     """
-
     if is_valid_file_extension(
              filePath,
              validExtension=validExtension):
@@ -217,10 +217,10 @@ class Directory(BaseModel):
                 files.append(file_path)
 
         return files
-    
+
     def list_invalid_files(
             self,
-            validExtension : list[str]
+            validExtension: Union[str, List[str]],
             ) -> list[Path]:
         """
         List files in the directory and its subdirectories that have invalid
@@ -233,9 +233,25 @@ class Directory(BaseModel):
             list[Path]: A list of Path objects representing the files with
               invalid extensions.
         """
-        return [filePath for filePath in self.list_all_files()
-                if not has_appropriate_extension(filePath)]
+        return [
+            filePath for filePath in self.list_all_files()
+            if not is_valid_file_extension(
+                    filePath,
+                    validExtension=validExtension
+            )
+            ]
 
-    def list_valid_files(self) -> list[Path]:
+    def list_valid_files(
+            self,
+            validExtension: Union[str, List[str]],
+            ) -> list[Path]:
         return [filePath for filePath in self.list_all_files()
-                if has_appropriate_extension(filePath)]
+                if is_valid_file_extension(
+                    filePath,
+                    validExtension=validExtension
+            )
+            ]
+
+
+def test_toto():
+    print("ca marche")

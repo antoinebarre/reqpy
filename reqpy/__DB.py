@@ -8,6 +8,7 @@ import shutil
 from loguru import logger as log
 
 from reqpy.exception import ReqpyDBException
+from reqpy.tools.paths import Directory
 #from .__logging import Myconsole
 
 
@@ -23,7 +24,7 @@ from reqpy.exception import ReqpyDBException
 class GenericDB(BaseModel):
 
     # ------------------------------ MODEL ----------------------------- #
-    folderPath: Path
+    folderPath: Directory
     allowSubfolders: bool
     allowAdditionalFiles: bool
 
@@ -36,31 +37,6 @@ class GenericDB(BaseModel):
 
     # --------------------------- VALIDATION --------------------------- #
 
-    @field_validator("folderPath")
-    def folderPath_must_be_a_folder_existing_path(cls, folderPath: Path):
-        """
-        Validates that the folderPath attribute is an existing folder path.
-
-        Args:
-            cls: The class object.
-            rootdir (Path): The root directory path to validate.
-
-        Returns:
-            Path: The validated root directory path.
-
-        Raises:
-            ValueError: If the rootdir attribute is not an
-            existing folder path.
-        """
-
-        if not folderPath.is_dir():
-            raise ReqpyDBException(
-                "folderPath property shall be an existing folder path\n" +
-                f" - Current dir (relative): {str(folderPath)}\n" +
-                f" - Current dir (absolute): {str(folderPath.absolute())}\n"
-            )
-        return folderPath
-
     # --------------------------- CONSTRUCTOR -------------------------- #
     def __init__(
             self,
@@ -69,66 +45,10 @@ class GenericDB(BaseModel):
             allowAdditionalFiles: bool,
                  ):
         super().__init__(
-            folderPath=folderPath,
+            folderPath=Directory(folderPath),
             allowSubfolders=allowSubfolders,
             allowAdditionalFiles=allowAdditionalFiles,
             )
-
-# ============================== FILES TOOLS ============================= #
-
-
-    def list_subdirectories(self) -> list[Path]:
-        """
-        List subdirectories of the directory as a list of Path objects.
-
-        Args:
-            None
-
-        Returns:
-            list[Path]: A list of Path objects representing the subdirectories.
-        """
-        subdirectories = [subdir for subdir in self.folderPath.iterdir()
-                          if subdir.is_dir()]
-        return subdirectories
-
-    def list_all_files(self) -> list[Path]:
-        """
-        List all files in a directory and its subdirectories
-        except .gitignore files
-
-        Args:
-            directory_path (Path): The path to the directory.
-
-        Returns:
-            list[Path]: A list of Path objects representing the files.
-        """
-        files = []
-        for file_path in self.folderPath.glob('**/*'):
-            if (file_path.is_file() and
-               file_path.name != ".gitignore"):
-
-                files.append(file_path)
-
-        return files
-
-    def list_invalid_files(self) -> list[Path]:
-        """
-        List files in the directory and its subdirectories that have invalid
-          extensions.
-
-        Args:
-            None
-
-        Returns:
-            list[Path]: A list of Path objects representing the files with
-              invalid extensions.
-        """
-        return [filePath for filePath in self.list_all_files()
-                if not self.has_appropriate_extension(filePath)]
-
-    def list_valid_files(self) -> list[Path]:
-        return [filePath for filePath in self.list_all_files()
-                if self.has_appropriate_extension(filePath)]
 
 # =========================== VALIDATION TOOLS ========================== #
     def is_valid_folder_structure(self) -> bool:
@@ -142,7 +62,7 @@ class GenericDB(BaseModel):
             bool: True if the folder structure is valid, False otherwise.
         """
         if (
-             not self.list_subdirectories == [] and
+             not self.folderPath.list_subdirectories() == [] and
              not self.allowSubfolders
            ):
             return False
@@ -151,7 +71,9 @@ class GenericDB(BaseModel):
 
     def is_conform_to_file_rules(self) -> bool:
         if (
-                not self.list_invalid_files() == [] and
+                not self.folderPath.list_invalid_files(
+            validExtension=self.va
+                ) == [] and
                 not self.allowAdditionalFiles
                 ):
             return False

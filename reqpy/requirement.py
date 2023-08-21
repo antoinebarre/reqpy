@@ -6,10 +6,15 @@ from loguru import logger as log
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
+
 from .__genericItem import GenericItem
 from .settings import RequirementSettings
 from .exception import ReqpyIOException
-from .tools.strings import has_punctuation_or_accent
+from .tools.strings import (
+    generate_paragraph,
+    generate_title,
+    has_punctuation_or_accent)
 
 from .requirementItems import ValidationStatus
 
@@ -135,6 +140,37 @@ class Requirement(BaseModel, GenericItem):
             )
         return new_req
 
+    @staticmethod
+    def createFakeRequirement() -> Requirement:
+        return Requirement(
+            title=generate_title(
+                min_characters=RequirementSettings.min_title_length,
+                max_characters=RequirementSettings.max_title_length
+                ),
+            description=generate_paragraph(
+                max_characters=RequirementSettings.max_description_length
+            ),
+            rationale=generate_paragraph(
+                max_characters=RequirementSettings.max_description_length
+            )
+        )
+
+    @staticmethod
+    def writeFakeRequirementFile(
+            folderPath: Path,
+            ) -> Path:
+
+        # create fake Requirement
+        req = Requirement.createFakeRequirement()
+
+        # create fileName
+        fileName = (req.title).replace(' ', '_') + DEFAULT_REQPY_FILE_EXTENSION
+
+        # write file
+        filePath = req.write(
+            filePath=folderPath / fileName,
+            )
+        return filePath
 # ---------------------- FILE VALIDATION TOOLS --------------------- #
 
     @staticmethod
@@ -204,3 +240,21 @@ class Requirement(BaseModel, GenericItem):
 #             f.write(self.toMD())
 
 #         return newMDFile
+
+
+# class RequirementFile(BaseModel):
+#     filePath: Path
+#     requirement: Requirement
+
+#     def __init__(
+#             self,
+#             filePath: Path):
+#         super().__init__(
+#             filePath=filePath,
+#             requirement=Requirement.read(filePath=filePath),
+#         )
+
+
+# class RequirementSet(BaseModel):
+#     requirements: list[RequirementFile]
+#     requirementFolder: Path

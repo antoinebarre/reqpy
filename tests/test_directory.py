@@ -71,3 +71,53 @@ def test_Directory_model_config_frozen():
     with pytest.raises(ValueError):
         a = Directory(Path())
         a.dirPath= Path("toto")
+
+
+def test_Directory_list_invalid_files(temp_dir: Path):
+    test_dir = temp_dir / "test_directory"
+    test_dir.mkdir()
+    valid_file1 = test_dir / "valid_file1.txt"
+    valid_file1.touch()
+    invalid_file1 = test_dir / "invalid_file1.csv"
+    invalid_file1.touch()
+    sub_dir = test_dir / "subdir"
+    sub_dir.mkdir()
+    valid_file2 = sub_dir / "valid_file2.txt"
+    valid_file2.touch()
+    invalid_file2 = sub_dir / "invalid_file2.csv"
+    invalid_file2.touch()
+    
+    valid_extension = ".txt"
+    directory = Directory(test_dir)
+    invalid_files = directory.list_invalid_files(validExtension=valid_extension)
+    
+    assert len(invalid_files) == 2
+    assert valid_file1 not in invalid_files
+    assert valid_file2 not in invalid_files
+    assert invalid_file1 in invalid_files
+    assert invalid_file2 in invalid_files
+
+
+def test_Directory_list_valid_files(temp_dir: Path):
+    test_dir = temp_dir / "test_directory"
+    test_dir.mkdir()
+    valid_file1 = test_dir / "valid_file1.txt"
+    valid_file1.touch()
+    invalid_file1 = test_dir / "invalid_file1.csv"
+    invalid_file1.touch()
+    sub_dir = test_dir / "subdir"
+    sub_dir.mkdir()
+    valid_file2 = sub_dir / "valid_file2.txt"
+    valid_file2.touch()
+    invalid_file2 = sub_dir / "invalid_file2.csv"
+    invalid_file2.touch()
+    
+    valid_extension = ".txt"
+    directory = Directory(test_dir)
+    valid_files = directory.list_valid_files(validExtension=valid_extension)
+    
+    assert len(valid_files) == 2
+    assert valid_file1 in valid_files
+    assert valid_file2 in valid_files
+    assert invalid_file1 not in valid_files
+    assert invalid_file2 not in valid_files
