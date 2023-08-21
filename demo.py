@@ -1,12 +1,8 @@
-from reqpy.tools.status import CheckStatus
+from reqpy.tools.status import CheckStatus, CheckStatusList
 
-a1 = CheckStatus(valid=True, message=["ghffghfg"])
-print(a1)
+a= CheckStatus(check="c1",valid=True,message="")
+b = CheckStatus(check="c2",valid=False,message="dfmlgkmlfgkmfld")
 
-a2 = CheckStatus(valid=False, message=["dfgfdlkg,dfl,g:df;,g:;df,g,d"])
-print(a2)
+tt =CheckStatusList([a,b])
 
-a3 = a1 + a2
-
-print(a3+a2)
-
+print(tt.is_valid())

@@ -1,6 +1,7 @@
 
 from __future__ import annotations
-from pydantic import BaseModel, ConfigDict
+from typing import Iterable
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class CheckStatus(BaseModel):
@@ -12,8 +13,9 @@ class CheckStatus(BaseModel):
         message (list[str]): List of messages associated with the check status.
     """
     # -------------------------- CONFIGURATION ------------------------- #
-    valid: bool
-    message: list[str]
+    check: str  # description of the check
+    valid: bool  # valid against the check
+    message: str  # message if invalid else ""
 
     # -------------------------- CONFIGURATION ------------------------- #
     model_config = ConfigDict(
@@ -23,31 +25,35 @@ class CheckStatus(BaseModel):
         )
 
     # ---------------------------- VALIDATOR --------------------------- #
-
+    @field_validator("check")
+    def validate_ids_length(cls, value):
+        if len(value) == 0:
+            raise ValueError("Empty string for check Name is not permitted")
+        return value
     # --------------------------- CONSTRUCTOR -------------------------- #
 
     def __init__(
             self,
+            check: str,
             valid: bool,
-            message: list[str],
+            message: str,
             **kwargs
             ):
-        """
-        Constructs a CheckStatus instance.
 
-        Args:
-            valid (bool): Indicates whether the check status is valid or not.
-            message (list[str]): List of messages associated with the check status.
-            **kwargs: Additional keyword arguments.
-        """
-        if valid is True:
-            message = []
-
-        super().__init__(
-            valid=valid,
-            message=message,
-            **kwargs
-            )
+        if valid is True and message != "":
+            raise ValueError(
+                ("For Checkstatus object message is not"
+                 " permitted if the check is valid"))
+        elif valid is False and message == "":
+            raise ValueError(
+                ("Empty rationale for a failled check is not permitted"))
+        else:
+            super().__init__(
+                check=check,
+                valid=valid,
+                message=message,
+                **kwargs
+                )
 
     # ------------------------- DUNDER METHODS ------------------------- #
     def __str__(self):
@@ -58,49 +64,56 @@ class CheckStatus(BaseModel):
             str: String representation of the check status.
         """
 
-        nb_issues = len(self.message)
-        if nb_issues > 0:
+        if self.valid is False:
             msg = (
-                f"Valid: {self.valid}\n" +
-                f"Messages: (nb of issues: {nb_issues})\n" +
-                "\n".join(self.message)
-            )
+                f"Check   : {self.check}\n" +
+                f"Valid   : {self.valid}\n" +
+                f"Messages: {self.message}")
         else:
             msg = (
+                f"Check   : {self.check}\n" +
                 f"Valid: {self.valid}\n"
             )
         return msg
 
-    def __add__(
-            self,
-            otherSelf: CheckStatus
-            ) -> CheckStatus:
-        """
-        Adds the statuses of two CheckStatus instances.
-
-        Args:
-            otherSelf (CheckStatus): Another CheckStatus instance to add.
-
-        Returns:
-            CheckStatus: New CheckStatus instance with combined statuses.
-        """
-        newValid = self.valid and otherSelf.valid
-        newMessage = self.message + otherSelf.message
-        return CheckStatus(
-            valid=newValid,
-            message=newMessage,
-        )
-
     # --------------------------- PROPERTIES --------------------------- #
 
-    @property
-    def nb_status(self) -> int:
-        """
-        Returns the number of status messages.
+    # ----------------------------- METHODS ---------------------------- #
 
-        Returns:
-            int: Number of status messages.
-        """
-        return len(self.message)
+
+class CheckStatusList(list):
+    # --------------------------- CONSTRUCTOR -------------------------- #
+    def __init__(self, iterable: Iterable[CheckStatus]):
+        if all(isinstance(item, CheckStatus) for item in iterable):
+            super().__init__(
+                item for item in iterable
+                )
+        else:
+            raise TypeError(
+                "all elements of the iterable shall be a CheckStatus object")
+    # --------------------------- PROPERTIES --------------------------- #
 
     # ----------------------------- METHODS ---------------------------- #
+
+    def append(self, item):
+        if isinstance(item, CheckStatus):
+            super().append(str(item))
+        else:
+            raise TypeError(
+                "Inapropriate type to append to a Checkstatus List."
+                " It shall be a Checkstatus"
+            )
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            raise TypeError(
+                "Inapropriate type to append to a Checkstatus List."
+                " It shall be a Checkstatus"
+            )
+
+    def is_valid(self) -> bool:
+        return all(
+            [elt.valid for elt in self]
+        )

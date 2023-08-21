@@ -160,7 +160,7 @@ def test_validate_requirement_file():
     # Test valid requirement file
     valid_status = Requirement.validateRequirementFile(filePath=valid_file_path)
     assert valid_status.valid == True
-    assert valid_status.message == []
+    assert valid_status.message == ""
     
     # Test invalid requirement file
     invalid_status = Requirement.validateRequirementFile(filePath=invalid_file_path)

@@ -156,6 +156,7 @@ class Requirement(BaseModel, GenericItem):
             )
         )
 
+    @log.catch(reraise=True)
     @staticmethod
     def writeFakeRequirementFile(
             folderPath: Path,
@@ -195,19 +196,24 @@ class Requirement(BaseModel, GenericItem):
             CheckStatus: A `CheckStatus` object indicating whether the file is
                         valid and containing any error messages if applicable.
         """
+        
+        checkName = "Validates the requirement file"
+        
         try:
             Requirement.read(
                 filePath=filePath
             )
             return CheckStatus(
+                check=checkName,
                 valid=True,
-                message=[]
+                message=""
             )
         except Exception as e:
             errorMsg = str(e)
             return CheckStatus(
+                check="checkName",
                 valid=False,
-                message=[errorMsg]
+                message=errorMsg
             )
 
     @staticmethod
@@ -279,19 +285,44 @@ class Requirement(BaseModel, GenericItem):
 #         return newMDFile
 
 
-class RequirementFile(BaseModel):
-    filePath: Path
-    requirement: Requirement
+# class RequirementsSet(BaseModel):
+#     # ------------------------------ MODEL ----------------------------- #
+#     RequirementPath: Path
 
-    def __init__(
-            self,
-            filePath: Path):
-        super().__init__(
-            filePath=filePath,
-            requirement=Requirement.read(filePath=filePath),
-        )
+#     # --------------------------- CONSTRUCTOR -------------------------- #
+#     def __init__(
+#             self,
+#             RequirementPath: Path):
+#         super().__init__(
+#             RequirementPath=RequirementPath,
+#         )
 
+#     # ---------------------------- VALIDATOR --------------------------- #
+#     @field_validator("folderPath")
+#     def folderPath_must_be_a_folder_existing_path(cls, folderPath: Path):
+#         """
+#         Validates that the folderPath attribute is an existing folder path.
 
-class RequirementSet(BaseModel):
-    requirements: list[RequirementFile]
-    requirementFolder: Path
+#         Args:
+#             cls: The class object.
+#             rootdir (Path): The root directory path to validate.
+
+#         Returns:
+#             Path: The validated root directory path.
+
+#         Raises:
+#             ValueError: If the rootdir attribute is not an
+#             existing folder path.
+#         """
+
+#         if not folderPath.is_dir():
+#             raise ValueError(
+#                 "folderPath property shall be an existing folder path\n" +
+#                 f" - Current dir (relative): {str(folderPath)}\n" +
+#                 f" - Current dir (absolute): {str(folderPath.absolute())}\n"
+#             )
+#         return folderPath
+
+# class RequirementSet(BaseModel):
+#     requirements: list[RequirementFile]
+#     requirementFolder: Path
