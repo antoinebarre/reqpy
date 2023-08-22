@@ -1,8 +1,20 @@
-from reqpy.tools.status import CheckStatus, CheckStatusList
+from pathlib import Path
+from reqpy.__DB import GenericDB
+import shutil
 
-a= CheckStatus(check="c1",valid=True,message="")
-b = CheckStatus(check="c2",valid=False,message="dfmlgkmlfgkmfld")
+a = GenericDB(folderPath=Path(),allowAdditionalFiles=True,allowSubfolders=True)
 
-tt =CheckStatusList([a,b])
+print(a.validateDataBase().is_valid())
 
-print(tt.is_valid())
+from reqpy.requirement import RequirementsSet
+
+
+folder = Path("work/toto")
+
+shutil.rmtree(folder,ignore_errors=True)
+folder.mkdir(exist_ok=True)
+
+req = RequirementsSet(
+    RequirementPath=folder)
+
+req.createFakeRequirementsSet()

@@ -79,6 +79,13 @@ class CheckStatus(BaseModel):
     # --------------------------- PROPERTIES --------------------------- #
 
     # ----------------------------- METHODS ---------------------------- #
+    @staticmethod
+    def createValid(checkName) -> CheckStatus:
+        return CheckStatus(
+            check=checkName,
+            valid=True,
+            message=""
+        )
 
 
 class CheckStatusList(list):

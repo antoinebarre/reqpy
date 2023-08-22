@@ -159,3 +159,42 @@ def generate_title(
 
     return capitalize_first_character(
             remove_non_alphanumeric(title))
+
+
+def random_string(
+        min_length: int = 8,
+        max_length: int = 14)-> str:
+    """
+    Get a random string
+    Args:
+        min_length: Minimal length of string
+        max_length: Maximal length of string
+    Returns:
+        Random string of ascii characters
+    """
+    length = random.randint(min_length, max_length)
+    return ''.join(
+        random.choice(string.ascii_lowercase + string.digits + " ")
+        for _ in range(length)
+    )
+
+
+def random_Title(
+        min_length: int = 8,
+        max_length: int = 14) -> str:
+    """
+    Get a random Title with a first capital letter
+    Args:
+        min_length: Minimal length of string
+        max_length: Maximal length of string
+    Returns:
+        Random string of ascii characters
+    """
+    input_string = random_string(
+        min_length=min_length,
+        max_length=max_length)
+
+    first_letter = random.choice(string.ascii_uppercase)
+
+    return (first_letter +
+            input_string[1:])

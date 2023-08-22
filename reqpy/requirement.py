@@ -2,6 +2,9 @@
 
 # IMPORT SECTION
 from __future__ import annotations
+import os
+import random
+import string
 from loguru import logger as log
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -10,12 +13,15 @@ from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
 from reqpy.tools.status import CheckStatus
 
 from .__genericItem import GenericItem
+from .__DB import GenericDB
 from .settings import RequirementSettings
 from .exception import ReqpyIOException
 from .tools.strings import (
     generate_paragraph,
     generate_title,
-    has_punctuation_or_accent)
+    has_punctuation_or_accent,
+    random_Title,
+    random_string)
 
 from .requirementItems import ValidationStatus
 
@@ -144,9 +150,9 @@ class Requirement(BaseModel, GenericItem):
     @staticmethod
     def createFakeRequirement() -> Requirement:
         return Requirement(
-            title=generate_title(
-                min_characters=RequirementSettings.min_title_length,
-                max_characters=RequirementSettings.max_title_length
+            title=random_Title(
+                min_length=RequirementSettings.min_title_length,
+                max_length=RequirementSettings.max_title_length
                 ),
             description=generate_paragraph(
                 max_characters=RequirementSettings.max_description_length
@@ -159,18 +165,15 @@ class Requirement(BaseModel, GenericItem):
     @log.catch(reraise=True)
     @staticmethod
     def writeFakeRequirementFile(
-            folderPath: Path,
+            filePath: Path,
             ) -> Path:
 
         # create fake Requirement
         req = Requirement.createFakeRequirement()
 
-        # create fileName
-        fileName = (req.title).replace(' ', '_') + DEFAULT_REQPY_FILE_EXTENSION
-
         # write file
         filePath = req.write(
-            filePath=folderPath / fileName,
+            filePath=filePath,
             )
         return filePath
 # ---------------------- FILE VALIDATION TOOLS --------------------- #
@@ -196,9 +199,9 @@ class Requirement(BaseModel, GenericItem):
             CheckStatus: A `CheckStatus` object indicating whether the file is
                         valid and containing any error messages if applicable.
         """
-        
+
         checkName = "Validates the requirement file"
-        
+
         try:
             Requirement.read(
                 filePath=filePath
@@ -285,44 +288,50 @@ class Requirement(BaseModel, GenericItem):
 #         return newMDFile
 
 
-# class RequirementsSet(BaseModel):
-#     # ------------------------------ MODEL ----------------------------- #
-#     RequirementPath: Path
+class RequirementsSet(GenericDB):
+    # ------------------------------ MODEL ----------------------------- #
 
-#     # --------------------------- CONSTRUCTOR -------------------------- #
-#     def __init__(
-#             self,
-#             RequirementPath: Path):
-#         super().__init__(
-#             RequirementPath=RequirementPath,
-#         )
+    # --------------------------- CONSTRUCTOR -------------------------- #
+    def __init__(
+            self,
+            RequirementPath: Path):
+        super().__init__(
+            folderPath=RequirementPath,
+            allowSubfolders=True,
+            allowAdditionalFiles=True
+        )
 
-#     # ---------------------------- VALIDATOR --------------------------- #
-#     @field_validator("folderPath")
-#     def folderPath_must_be_a_folder_existing_path(cls, folderPath: Path):
-#         """
-#         Validates that the folderPath attribute is an existing folder path.
+    # ---------------------------- VALIDATOR --------------------------- #
 
-#         Args:
-#             cls: The class object.
-#             rootdir (Path): The root directory path to validate.
+    # ----------------------------- FAKE DB ---------------------------- #
 
-#         Returns:
-#             Path: The validated root directory path.
+    def createFakeRequirementsSet(
+            self,
+            nfiles: int = 5,
+            nfolders: int = 5,
+            repeat: int = 4,
+            maxdepth: int = 8,
+            sigma_folders: int = 2,
+            sigma_files: int = 1):
 
-#         Raises:
-#             ValueError: If the rootdir attribute is not an
-#             existing folder path.
-#         """
-
-#         if not folderPath.is_dir():
-#             raise ValueError(
-#                 "folderPath property shall be an existing folder path\n" +
-#                 f" - Current dir (relative): {str(folderPath)}\n" +
-#                 f" - Current dir (absolute): {str(folderPath.absolute())}\n"
-#             )
-#         return folderPath
-
-# class RequirementSet(BaseModel):
-#     requirements: list[RequirementFile]
-#     requirementFolder: Path
+        alldirs = []
+        allfiles = []
+        basedir = self.folderPath
+        for i in range(repeat):
+            for root, dirs, files in os.walk(str(basedir)):
+                for _ in range(int(random.gauss(nfolders, sigma_folders))):
+                    p = Path(root) / random_string()
+                    p.mkdir(exist_ok=True)
+                    alldirs.append(p)
+                for _ in range(int(random.gauss(nfiles, sigma_files))):
+                    p = Path(root) / (
+                        random_string() +
+                        DEFAULT_REQPY_FILE_EXTENSION)
+                    p = Requirement.writeFakeRequirementFile(p)
+                    allfiles.append(p)
+                depth = os.path.relpath(root, str(basedir)).count(os.sep)
+                if maxdepth and depth >= maxdepth - 1:
+                    del dirs[:]
+        alldirs = list(set(alldirs))
+        allfiles = list(set(allfiles))
+        return alldirs, allfiles

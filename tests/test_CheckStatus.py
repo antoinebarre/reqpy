@@ -11,6 +11,12 @@ def test_valid_true_without_message():
     assert status.valid == True
     assert status.message == ""
 
+def test_createValid():
+    status = CheckStatus.createValid(checkName="Test Check")
+    assert status.check == "Test Check"
+    assert status.valid == True
+    assert status.message == ""
+
 def test_valid_false_with_message():
     status = CheckStatus(check="Test Check", valid=False, message="Error message")
     assert status.check == "Test Check"

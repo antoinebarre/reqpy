@@ -98,7 +98,7 @@ def test_is_InvalidRequirementFile(tmp_path: Path, invalid_requirement_data: dic
 
 @pytest.fixture
 def mock_generate_title(mocker):
-    return mocker.patch('reqpy.requirement.generate_title')
+    return mocker.patch('reqpy.requirement.random_Title')
 
 @pytest.fixture
 def mock_generate_paragraph(mocker):
@@ -115,7 +115,7 @@ def test_create_fake_requirement(mock_generate_title: Any, mock_generate_paragra
     assert fake_requirement.rationale == "Mock Description"
 
 def test_write_fake_requirement_file(tmp_path: Path):
-    file_path = Requirement.writeFakeRequirementFile(tmp_path)
+    file_path = Requirement.writeFakeRequirementFile(tmp_path / ("file"+DEFAULT_REQPY_FILE_EXTENSION))
     assert file_path.exists()
     assert file_path.is_file()
 
@@ -133,7 +133,7 @@ def test_write_fake_requirement_file_multiple_times(tmp_path: Path):
     file_paths = []
 
     for _ in range(num_files):
-        file_path = Requirement.writeFakeRequirementFile(tmp_path)
+        file_path = Requirement.writeFakeRequirementFile(tmp_path / ("file"+DEFAULT_REQPY_FILE_EXTENSION))
         file_paths.append(file_path)
 
     # Check if all written files are valid requirement files

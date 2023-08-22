@@ -1,266 +1,237 @@
-# """DataBase management of REQPY"""
+"""DataBase management of REQPY"""
 
-# from dataclasses import dataclass
-# from pydantic import BaseModel, ConfigDict, field_validator
-# from pathlib import Path
-# from typing import List
-# import shutil
-# from loguru import logger as log
+from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict, field_validator
+from pathlib import Path
+from typing import List
+import shutil
+from loguru import logger as log
+from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
 
-# from reqpy.exception import ReqpyDBException
-# from reqpy.tools.paths import Directory
+from reqpy.exception import ReqpyDBException
+from reqpy.tools.paths import Directory
+from reqpy.tools.status import CheckStatus, CheckStatusList
 
 
-# class GenericDB(BaseModel):
+class GenericDB(BaseModel):
 
-#     # ------------------------------ MODEL ----------------------------- #
-#     folderPath: Directory
-#     allowSubfolders: bool
-#     allowAdditionalFiles: bool
+    # ------------------------------ MODEL ----------------------------- #
+    folderPath: Path
+    allowSubfolders: bool
+    allowAdditionalFiles: bool
 
-#     # ----------------------------- CONFIG ----------------------------- #
-#     model_config = ConfigDict(
-#         extra='forbid',
-#         validate_assignment=True,
-#         frozen=True,
-#         )
+    # ----------------------------- CONFIG ----------------------------- #
+    model_config = ConfigDict(
+        extra='forbid',
+        validate_assignment=True,
+        frozen=True,
+        )
 
-#     # --------------------------- VALIDATION --------------------------- #
+    # --------------------------- VALIDATION --------------------------- #
+    @field_validator("folderPath")
+    def folderPath_must_be_a_folder_existing_path(cls, folderPath: Path):
+        """
+        Validates that the folderPath attribute is an existing folder path.
 
-#     # --------------------------- CONSTRUCTOR -------------------------- #
-#     def __init__(
-#             self,
-#             folderPath: Path,
-#             allowSubfolders: bool,
-#             allowAdditionalFiles: bool,
-#                  ):
-#         super().__init__(
-#             folderPath=Directory(folderPath),
-#             allowSubfolders=allowSubfolders,
-#             allowAdditionalFiles=allowAdditionalFiles,
-#             )
+        Args:
+            cls: The class object.
+            rootdir (Path): The root directory path to validate.
 
-# # =========================== VALIDATION TOOLS ========================== #
-#     def is_valid_folder_structure(self) -> bool:
-#         """
-#         Check if the folder structure is valid.
+        Returns:
+            Path: The validated root directory path.
 
-#         Args:
-#             None
+        Raises:
+            ValueError: If the rootdir attribute is not an
+            existing folder path.
+        """
 
-#         Returns:
-#             bool: True if the folder structure is valid, False otherwise.
-#         """
-#         if (
-#              not self.folderPath.list_subdirectories() == [] and
-#              not self.allowSubfolders
-#            ):
-#             return False
-#         else:
-#             return True
+        if not folderPath.is_dir():
+            raise ValueError(
+                f"folderPath property that defines {cls.__class__.__name__}" +
+                " shall be an existing folder path\n" +
+                f" - Current dir (relative): {str(folderPath)}\n" +
+                f" - Current dir (absolute): {str(folderPath.absolute())}\n"
+            )
+        return folderPath
 
-#     def is_conform_to_file_rules(self) -> bool:
-#         if (
-#                 not self.folderPath.list_invalid_files(
-#             validExtension=self.va
-#                 ) == [] and
-#                 not self.allowAdditionalFiles
-#                 ):
-#             return False
-#         else:
-#             return True
+    # --------------------------- CONSTRUCTOR -------------------------- #
+    def __init__(
+            self,
+            folderPath: Path,
+            allowSubfolders: bool,
+            allowAdditionalFiles: bool,
+                 ):
+        super().__init__(
+            folderPath=folderPath,
+            allowSubfolders=allowSubfolders,
+            allowAdditionalFiles=allowAdditionalFiles,
+            )
+    # --------------------------- VALIDATION TOOLS----------------------- #
 
-#     def get_Folder_Conformance_Status(
-#             self,
-#             show_console: bool) -> bool:
+    def validateDataBase(self) -> CheckStatusList:
 
-#         # check subdirectories
-#         Myconsole.task(
-#             msg="Check subdirectories",
-#             show_console=show_console)
+        return CheckStatusList(
+            [
+                self.__validateSubFolder(),
+                self.__validateAdditionalFiles(),
+            ]
+        )
 
-#         if self.is_valid_folder_structure():
-#             message = "Folder structure is correct"
-#             Myconsole.ok(
-#                 msg=message,
-#                 show_console=show_console,
-#             )
-#             log.info(message)
-#         else:
-#             message = "The subdirectories are not permitted - Please remove it"
-#             Myconsole.ko(
-#                 msg=message,
-#                 show_console=show_console
-#             )
-#             log.error(message)
-#             return False
+    def __validateSubFolder(self) -> CheckStatus:
+        checkName = "Validate Subfolders Existence"
 
-#         # check file extensions
-#         Myconsole.task(
-#             msg="Check additional files",
-#             show_console=show_console,
-#             )
-#         if self.is_conform_to_file_rules():
-#             message = " all files are correct"
-#             Myconsole.ok(
-#                 msg=message,
-#                 show_console=show_console,
-#             )
-#             log.info(message)
-#         else:
-#             list_file = self.list_invalid_files()
-#             wrongFiles = [str(path.absolute()) for path in list_file]
-#             wrongFiles = "\n".join(wrongFiles)
-#             message = (
-#              "Additional files are not permitted"
-#              f". The list of allowed extensions is {self.allowedExtensions}\n"
-#              f"Detected inapropriate files :\n {wrongFiles}")
-#             Myconsole.ko(
-#                 msg=message,
-#                 show_console=show_console,
-#             )
-#             log.error(message)
-#             return False
-#         return True
+        if (Directory(self.folderPath).list_subdirectories != [] and
+                not self.allowSubfolders):
 
-#     @log.catch
-#     def validate_Folder_Conformance_Status(
-#             self,
-#             show_console: bool = False,
-#             ) -> None:
-#         if not self.get_Folder_Conformance_Status(
-#                     show_console=show_console,
-#                     ):
-#             msg = (
-#                 f"The folder {self.folderPath} is not well strucutured"
-#                 "The allowed configuration is:\n"
-#                 f"- allow subdirectories : {self.allowSubfolders}\n"
-#                 f"- allow additional files: {self.allowAdditionalFiles}\n"
-#                 f"- allow extensions : {self.allowedExtensions}"
-#                 )
-#             raise reqpyDataBaseException(msg)
+            return CheckStatus(
+                check=checkName,
+                valid=False,
+                message=(
+                    "No subfolder is permietted"
+                    f" in the folder {self.folderPath.absolute()}")
+            )
+        else:
+            return CheckStatus.createValid(checkName)
 
-# # ---------------------- GENERIC EXPORT TOOLS ---------------------- #
-#     @log.catch
-#     def copy_folders_structure(
-#             self,
-#             destinationDir: Path,
-#             show_console: bool = False,
-#             ) -> None:
+    def __validateAdditionalFiles(self) -> CheckStatus:
+        checkName = "Validate Additional files existences"
 
-#         try:
-#             Myconsole.apps(
-#                 msg=f"Copy of the folder structure to {destinationDir}",
-#                 show_console=show_console,
-#                 )
-#             # validate folder structure
-#             self.validate_Folder_Conformance_Status()
+        if (Directory(self.folderPath).list_invalid_files(
+                validExtension=DEFAULT_REQPY_FILE_EXTENSION
+                ) != [] and
+                not self.allowAdditionalFiles):
+            return CheckStatus(
+                check=checkName,
+                valid=False,
+                message=(
+                    "No additional file is permietted"
+                    f" in the folder {self.folderPath.absolute()}")
+            )
+        else:
+            return CheckStatus.createValid(checkName)
 
-#             # create destination folder
-#             destinationDir.mkdir(parents=True, exist_ok=True)
 
-#             # copy directories
-#             listdirs = self.list_subdirectories()
+# ---------------------- GENERIC EXPORT TOOLS ---------------------- #
+#     # @log.catch
+#     # def copy_folders_structure(
+#     #         self,
+#     #         destinationDir: Path,
+#     #         show_console: bool = False,
+#     #         ) -> None:
 
-#             for dirPath in listdirs:
-#                 # get the new foldername
-#                 folderName = str(dirPath.relative_to(self.folderPath))
-#                 newDir = destinationDir / folderName
+#     #     try:
+#     #         Myconsole.apps(
+#     #             msg=f"Copy of the folder structure to {destinationDir}",
+#     #             show_console=show_console,
+#     #             )
+#     #         # validate folder structure
+#     #         self.validate_Folder_Conformance_Status()
 
-#                 # crate dir
-#                 dirPath.mkdir(parents=True, exist_ok=True)
+#     #         # create destination folder
+#     #         destinationDir.mkdir(parents=True, exist_ok=True)
 
-#                 # logging
-#                 msg = f"Copy of the folder {newDir}"
-#                 Myconsole.info(
-#                     msg=msg,
-#                     show_console=show_console,
-#                     )
-#                 log.info(msg)
+#     #         # copy directories
+#     #         listdirs = self.list_subdirectories()
 
-#         except Exception as e:
-#             msg = (
-#                 "Impossible to copy the folders" +
-#                 f" to {destinationDir}\n:" +
-#                 str(e)
-#             )
-#             raise reqpyDataBaseException(msg)
+#     #         for dirPath in listdirs:
+#     #             # get the new foldername
+#     #             folderName = str(dirPath.relative_to(self.folderPath))
+#     #             newDir = destinationDir / folderName
 
-#     @log.catch
-#     def copy_additional_files(
-#             self,
-#             destinationDir: Path,
-#             show_console: bool = False,
-#     ) -> None:
+#     #             # crate dir
+#     #             dirPath.mkdir(parents=True, exist_ok=True)
 
-#         try:
-#             Myconsole.apps(
-#                 msg=f"Copy of the additional files to {destinationDir}",
-#                 show_console=show_console,
-#             )
+#     #             # logging
+#     #             msg = f"Copy of the folder {newDir}"
+#     #             Myconsole.info(
+#     #                 msg=msg,
+#     #                 show_console=show_console,
+#     #                 )
+#     #             log.info(msg)
 
-#             # target info :
-#             msg = f"Targeted Folder:{str(destinationDir.absolute())}"
-#             Myconsole.info(
-#                 msg=msg,
-#                 show_console=show_console,
-#             )
-#             log.trace(msg)
-#             # validate folder structure
-#             self.validate_Folder_Conformance_Status()
+#     #     except Exception as e:
+#     #         msg = (
+#     #             "Impossible to copy the folders" +
+#     #             f" to {destinationDir}\n:" +
+#     #             str(e)
+#     #         )
+#     #         raise reqpyDataBaseException(msg)
 
-#             # create destination folder
-#             destinationDir.mkdir(parents=True, exist_ok=True)
+#     # @log.catch
+#     # def copy_additional_files(
+#     #         self,
+#     #         destinationDir: Path,
+#     #         show_console: bool = False,
+#     # ) -> None:
 
-#             otherFiles = self.list_invalid_files()
+#     #     try:
+#     #         Myconsole.apps(
+#     #             msg=f"Copy of the additional files to {destinationDir}",
+#     #             show_console=show_console,
+#     #         )
 
-#             # information about the number of additional files
-#             infoList = [str(fileName.absolute()) for fileName in otherFiles]
-#             log.trace(
-#                 f"List of Files to copy :\n {infoList}")
+#     #         # target info :
+#     #         msg = f"Targeted Folder:{str(destinationDir.absolute())}"
+#     #         Myconsole.info(
+#     #             msg=msg,
+#     #             show_console=show_console,
+#     #         )
+#     #         log.trace(msg)
+#     #         # validate folder structure
+#     #         self.validate_Folder_Conformance_Status()
 
-#             message = (
-#                 f"Number of additional files to copy: {len(otherFiles)}"
-#             )
-#             log.trace(message)
-#             Myconsole.info(
-#                 msg=message,
-#                 show_console=show_console,
-#             )
+#     #         # create destination folder
+#     #         destinationDir.mkdir(parents=True, exist_ok=True)
 
-#             if len(otherFiles) > 0:
-#                 # initiate outputs
-#                 newFiles = []
+#     #         otherFiles = self.list_invalid_files()
 
-#                 # create progress bar
-#                 sequence = Myconsole.progressBar(
-#                     sequence=otherFiles,
-#                     description="Copy of Additional Files...",
-#                     show_console=show_console,
-#                 )
+#     #         # information about the number of additional files
+#     #         infoList = [str(fileName.absolute()) for fileName in otherFiles]
+#     #         log.trace(
+#     #             f"List of Files to copy :\n {infoList}")
 
-#                 for otherFile in sequence:
-#                     newFolder = (destinationDir /
-#                                  otherFile.relative_to(self.folderPath).parent)
-#                     newFile = newFolder / otherFile.name
+#     #         message = (
+#     #             f"Number of additional files to copy: {len(otherFiles)}"
+#     #         )
+#     #         log.trace(message)
+#     #         Myconsole.info(
+#     #             msg=message,
+#     #             show_console=show_console,
+#     #         )
 
-#                     # create destination folder if necessary
-#                     newFolder.mkdir(parents=True, exist_ok=True)
+#     #         if len(otherFiles) > 0:
+#     #             # initiate outputs
+#     #             newFiles = []
 
-#                     # copy file
-#                     shutil.copy(otherFile, newFile)
+#     #             # create progress bar
+#     #             sequence = Myconsole.progressBar(
+#     #                 sequence=otherFiles,
+#     #                 description="Copy of Additional Files...",
+#     #                 show_console=show_console,
+#     #             )
 
-#                     # add to list of new files path
-#                     newFiles.append(newFile)
+#     #             for otherFile in sequence:
+#     #                 newFolder = (destinationDir /
+#     #                              otherFile.relative_to(self.folderPath).parent)
+#     #                 newFile = newFolder / otherFile.name
 
-#                     message = f"Copy of the file {otherFile}"
+#     #                 # create destination folder if necessary
+#     #                 newFolder.mkdir(parents=True, exist_ok=True)
 
-#                     log.trace(message)
+#     #                 # copy file
+#     #                 shutil.copy(otherFile, newFile)
 
-#         except Exception as e:
-#             message = (
-#                 "Impossible to copy the folders" +
-#                 f" to {destinationDir}\n:" +
-#                 str(e)
-#             ),
-#             raise reqpyDataBaseException(message)
+#     #                 # add to list of new files path
+#     #                 newFiles.append(newFile)
+
+#     #                 message = f"Copy of the file {otherFile}"
+
+#     #                 log.trace(message)
+
+#     #     except Exception as e:
+#     #         message = (
+#     #             "Impossible to copy the folders" +
+#     #             f" to {destinationDir}\n:" +
+#     #             str(e)
+#     #         ),
+#     #         raise reqpyDataBaseException(message)
