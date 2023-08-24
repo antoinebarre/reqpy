@@ -4,13 +4,14 @@ from dataclasses import dataclass
 from pydantic import BaseModel, ConfigDict, field_validator
 from pathlib import Path
 from typing import List
-import shutil
+from shutil import copy
 from loguru import logger as log
-from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
+from .constants import DEFAULT_REQPY_FILE_EXTENSION
 
-from reqpy.exception import ReqpyDBException
-from reqpy.tools.paths import Directory
-from reqpy.tools.status import CheckStatus, CheckStatusList
+from .exception import ReqpyDBException
+from .tools.paths import Directory
+from .tools.status import CheckStatus, CheckStatusList
+from .__logging import Myconsole
 
 
 class GenericDB(BaseModel):
@@ -79,8 +80,10 @@ class GenericDB(BaseModel):
 
     def __validateSubFolder(self) -> CheckStatus:
         checkName = "Validate Subfolders Existence"
+        print("tata:")
+        print(Directory(self.folderPath).list_subdirectories())
 
-        if (Directory(self.folderPath).list_subdirectories != [] and
+        if (Directory(self.folderPath).list_subdirectories() != [] and
                 not self.allowSubfolders):
 
             return CheckStatus(
@@ -88,7 +91,8 @@ class GenericDB(BaseModel):
                 valid=False,
                 message=(
                     "No subfolder is permietted"
-                    f" in the folder {self.folderPath.absolute()}")
+                    f" in the folder {self.folderPath.absolute()}"
+                    )
             )
         else:
             return CheckStatus.createValid(checkName)
@@ -110,128 +114,158 @@ class GenericDB(BaseModel):
         else:
             return CheckStatus.createValid(checkName)
 
+    # --------------------------- EXPORT TOOL -------------------------- #
 
-# ---------------------- GENERIC EXPORT TOOLS ---------------------- #
-#     # @log.catch
-#     # def copy_folders_structure(
-#     #         self,
-#     #         destinationDir: Path,
-#     #         show_console: bool = False,
-#     #         ) -> None:
+    def __copy_folders_structure(
+            self,
+            destinationDir: Path,
+            show_console: bool = False,
+            ) -> None:
+        try:
+            Myconsole.apps(
+                msg=f"Copy of the folder structure to {destinationDir}",
+                show_console=show_console,
+                )
 
-#     #     try:
-#     #         Myconsole.apps(
-#     #             msg=f"Copy of the folder structure to {destinationDir}",
-#     #             show_console=show_console,
-#     #             )
-#     #         # validate folder structure
-#     #         self.validate_Folder_Conformance_Status()
+            # target info :
+            msg = f"Targeted Folder:{str(destinationDir.absolute())}"
+            Myconsole.info(
+                msg=msg,
+                show_console=show_console,
+            )
 
-#     #         # create destination folder
-#     #         destinationDir.mkdir(parents=True, exist_ok=True)
+            # copy directories
+            listdirs = Directory(dirPath=self.folderPath).list_subdirectories()
 
-#     #         # copy directories
-#     #         listdirs = self.list_subdirectories()
+            for dirPath in listdirs:
+                # get the new foldername
+                folderName = str(dirPath.relative_to(self.folderPath))
+                newDir = destinationDir / folderName
 
-#     #         for dirPath in listdirs:
-#     #             # get the new foldername
-#     #             folderName = str(dirPath.relative_to(self.folderPath))
-#     #             newDir = destinationDir / folderName
+                # crate dir
+                dirPath.mkdir(parents=True, exist_ok=True)
 
-#     #             # crate dir
-#     #             dirPath.mkdir(parents=True, exist_ok=True)
+                # logging
+                msg = f"Copy of the folder {newDir} OK"
+                Myconsole.info(
+                    msg=msg,
+                    show_console=show_console,
+                    )
 
-#     #             # logging
-#     #             msg = f"Copy of the folder {newDir}"
-#     #             Myconsole.info(
-#     #                 msg=msg,
-#     #                 show_console=show_console,
-#     #                 )
-#     #             log.info(msg)
+        except Exception as e:
+            msg = (
+                "Impossible to copy the folders" +
+                f" to {destinationDir}\n:" +
+                str(e)
+            )
+            raise ReqpyDBException(msg)
 
-#     #     except Exception as e:
-#     #         msg = (
-#     #             "Impossible to copy the folders" +
-#     #             f" to {destinationDir}\n:" +
-#     #             str(e)
-#     #         )
-#     #         raise reqpyDataBaseException(msg)
+    def __copy_additional_files(
+            self,
+            destinationDir: Path,
+            show_console: bool = False,
+    ) -> None:
 
-#     # @log.catch
-#     # def copy_additional_files(
-#     #         self,
-#     #         destinationDir: Path,
-#     #         show_console: bool = False,
-#     # ) -> None:
+        # Copy of the file
+        try:
+            Myconsole.apps(
+                msg=f"Copy of the additional files to {destinationDir}",
+                show_console=show_console,
+            )
 
-#     #     try:
-#     #         Myconsole.apps(
-#     #             msg=f"Copy of the additional files to {destinationDir}",
-#     #             show_console=show_console,
-#     #         )
+            # target info :
+            msg = f"Targeted Folder:{str(destinationDir.absolute())}"
+            Myconsole.info(
+                msg=msg,
+                show_console=show_console,
+            )
 
-#     #         # target info :
-#     #         msg = f"Targeted Folder:{str(destinationDir.absolute())}"
-#     #         Myconsole.info(
-#     #             msg=msg,
-#     #             show_console=show_console,
-#     #         )
-#     #         log.trace(msg)
-#     #         # validate folder structure
-#     #         self.validate_Folder_Conformance_Status()
+            otherFiles = Directory(self.folderPath).list_invalid_files(
+                validExtension=DEFAULT_REQPY_FILE_EXTENSION
+            )
 
-#     #         # create destination folder
-#     #         destinationDir.mkdir(parents=True, exist_ok=True)
+            # information about the number of additional files
+            infoList = [str(fileName.absolute()) for fileName in otherFiles]
+            log.trace(
+                f"List of Files to copy :\n {infoList}")
 
-#     #         otherFiles = self.list_invalid_files()
+            message = (
+                f"Number of additional files to copy: {len(otherFiles)}"
+            )
+            Myconsole.info(
+                msg=message,
+                show_console=show_console,
+            )
 
-#     #         # information about the number of additional files
-#     #         infoList = [str(fileName.absolute()) for fileName in otherFiles]
-#     #         log.trace(
-#     #             f"List of Files to copy :\n {infoList}")
+            if len(otherFiles) > 0:
+                # initiate outputs
+                newFiles = []
 
-#     #         message = (
-#     #             f"Number of additional files to copy: {len(otherFiles)}"
-#     #         )
-#     #         log.trace(message)
-#     #         Myconsole.info(
-#     #             msg=message,
-#     #             show_console=show_console,
-#     #         )
+                # create progress bar
+                sequence = Myconsole.progressBar(
+                    sequence=otherFiles,
+                    description="Copy of Additional Files...",
+                    show_console=show_console,
+                )
 
-#     #         if len(otherFiles) > 0:
-#     #             # initiate outputs
-#     #             newFiles = []
+                for otherFile in sequence:
+                    newFolder = (destinationDir /
+                                 otherFile.relative_to(self.folderPath).parent)
+                    newFile = newFolder / otherFile.name
 
-#     #             # create progress bar
-#     #             sequence = Myconsole.progressBar(
-#     #                 sequence=otherFiles,
-#     #                 description="Copy of Additional Files...",
-#     #                 show_console=show_console,
-#     #             )
+                    # create destination folder if necessary
+                    newFolder.mkdir(parents=True, exist_ok=True)
 
-#     #             for otherFile in sequence:
-#     #                 newFolder = (destinationDir /
-#     #                              otherFile.relative_to(self.folderPath).parent)
-#     #                 newFile = newFolder / otherFile.name
+                    # copy file
+                    copy(otherFile, newFile)
 
-#     #                 # create destination folder if necessary
-#     #                 newFolder.mkdir(parents=True, exist_ok=True)
+                    # add to list of new files path
+                    newFiles.append(newFile)
 
-#     #                 # copy file
-#     #                 shutil.copy(otherFile, newFile)
+                    # logging
+                    msg = f"Copy to the file {newFile} OK"
+                    Myconsole.info(
+                        msg=msg,
+                        show_console=show_console,
+                    )
 
-#     #                 # add to list of new files path
-#     #                 newFiles.append(newFile)
+        except Exception as e:
+            message = (
+                "Impossible to copy the folders" +
+                f" to {destinationDir}\n:" +
+                str(e)
+                )
+            raise ReqpyDBException(message)
 
-#     #                 message = f"Copy of the file {otherFile}"
+    def copyFoldersFiles(
+            self,
+            destinationDir: Path,
+            show_console: bool = False,
+            ) -> None:
 
-#     #                 log.trace(message)
+        # create destination folder
+        destinationDir.mkdir(parents=True, exist_ok=True)
 
-#     #     except Exception as e:
-#     #         message = (
-#     #             "Impossible to copy the folders" +
-#     #             f" to {destinationDir}\n:" +
-#     #             str(e)
-#     #         ),
-#     #         raise reqpyDataBaseException(message)
+        # validate folder structure
+        if not self.validateDataBase().is_valid():
+            msg = (
+                f"The directory {self.folderPath} is not valid.\n"
+                f"Detected Errors :\n{self.validateDataBase().tostr()}"
+                )
+            Myconsole.error(
+                msg=msg,
+                show_console=show_console
+            )
+            raise ReqpyDBException(msg)
+
+        if self.allowAdditionalFiles:
+            self.__copy_additional_files(
+                destinationDir=destinationDir,
+                show_console=show_console,
+            )
+        if self.allowSubfolders:
+            self.__copy_folders_structure(
+                destinationDir=destinationDir,
+                show_console=show_console,
+            )
+

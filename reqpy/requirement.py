@@ -4,13 +4,16 @@
 from __future__ import annotations
 import os
 import random
-import string
 from loguru import logger as log
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
-from reqpy.tools.status import CheckStatus
+from reqpy.tools.paths import validateCorrectFileExtension
+
+from .constants import DEFAULT_REQPY_FILE_EXTENSION, DEFAULT_REPORT_EXTENSION
+from .tools.image import generate_random_image
+from .tools.markdown import MDText
+from .tools.status import CheckStatus
 
 from .__genericItem import GenericItem
 from .__DB import GenericDB
@@ -18,7 +21,6 @@ from .settings import RequirementSettings
 from .exception import ReqpyIOException
 from .tools.strings import (
     generate_paragraph,
-    generate_title,
     has_punctuation_or_accent,
     random_Title,
     random_string)
@@ -27,6 +29,7 @@ from .requirementItems import ValidationStatus
 
 __all__ = [
     "Requirement",
+    "RequirementsSet"
 ]
 
 
@@ -147,6 +150,7 @@ class Requirement(BaseModel, GenericItem):
             )
         return new_req
 
+    # ------------------------ FAKE REQUIREMENT ------------------------ #
     @staticmethod
     def createFakeRequirement() -> Requirement:
         return Requirement(
@@ -162,7 +166,36 @@ class Requirement(BaseModel, GenericItem):
             )
         )
 
-    @log.catch(reraise=True)
+    @staticmethod
+    def writeFakeRequirementFile_withPictures(
+            filePath: Path,
+            ) -> Path:
+
+        # create fake Requirement
+        req = Requirement.createFakeRequirement()
+
+        # Create image path
+        dirPath = filePath.parent
+        fileName = filePath.stem
+        imgPath1 = dirPath / (fileName + "_1.jpg")
+        imgPath2 = dirPath / (fileName + "_2.jpg")
+
+        # generate two images (200x200pixels)
+        img1 = generate_random_image(200, 200)
+        img1.save(imgPath1, "JPEG")
+        img2 = generate_random_image(200, 200)
+        img2.save(imgPath2, "JPEG")
+
+        # modify requirement
+        req.description += f"\n[IMG TEST 01]({imgPath1.name})\n"
+        req.rationale += f"\n[IMG TEST 02]({imgPath2.name})\n"
+
+        # write file
+        filePath = req.write(
+            filePath=filePath,
+            )
+        return filePath
+
     @staticmethod
     def writeFakeRequirementFile(
             filePath: Path,
@@ -251,41 +284,38 @@ class Requirement(BaseModel, GenericItem):
         else:
             return False
 
-# # -------------------------- EXPORT TOOLS -------------------------- #
-#     def toMD(self) -> str:
+# -------------------------- EXPORT TOOLS -------------------------- #
+    def toMD(self) -> str:
 
-#         listOfAttributes = self.listAttributes()
+        listOfAttributes = self.attributesList
 
-#         # initiate MK object
-#         mk = MDText()
+        # initiate MK object
+        mk = MDText()
 
-#         # create title
-#         mk.add_title(self.title)
+        # create title
+        mk.add_title(self.title)
 
-#         # create paragraphs
-#         for attribute in listOfAttributes:
-#             if attribute != "title":
-#                 mk.add_header(level=2,title=attribute.upper())
-#                 mk.add_paragraph(text=getattr(self, attribute))
-#         return str(mk)
+        # create paragraphs
+        for attribute in listOfAttributes:
+            if attribute != "title":
+                mk.add_header(level=2, title=attribute.upper())
+                mk.add_paragraph(text=getattr(self, attribute))
+        return str(mk)
 
-#     def toMDFile(
-#             self,
-#             directoryPath: Path
-#             ) -> Path:
+    def toMDFile(
+            self,
+            MDPath: Path
+            ) -> Path:
 
-#         newMDFile = directoryPath / (
-#             self.get_valid_fileName() +
-#             DEFAULT_EXTENSION_REPORT
-#             )
-#         # create directory if necessary
-#         directoryPath.mkdir(parents=True, exist_ok=True)
+        newMDFile = validateCorrectFileExtension(
+            filePath=MDPath,
+            validExtension=".md"
+        )
+        # write file
+        with newMDFile.open("w+", encoding="utf-8") as f:
+            f.write(self.toMD())
 
-#         # write file
-#         with newMDFile.open("w+", encoding="utf-8") as f:
-#             f.write(self.toMD())
-
-#         return newMDFile
+        return newMDFile
 
 
 class RequirementsSet(GenericDB):
@@ -300,8 +330,6 @@ class RequirementsSet(GenericDB):
             allowSubfolders=True,
             allowAdditionalFiles=True
         )
-
-    # ---------------------------- VALIDATOR --------------------------- #
 
     # ----------------------------- FAKE DB ---------------------------- #
 

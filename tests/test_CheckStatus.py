@@ -101,3 +101,44 @@ def test_checkstatus_list_is_valid():
 
     assert valid_list.is_valid() == True
     assert invalid_list.is_valid() == False
+
+
+class TestCheckStatusList:
+
+    @staticmethod
+    def test_tostr_empty_list():
+        check_list = CheckStatusList([])
+        result = check_list.tostr()
+        expected = (
+            "+-------+----------+-----------+\n"
+            "| Check | Is Valid | Rationale |\n"
+            "+-------+----------+-----------+\n"
+            "+-------+----------+-----------+"
+        )
+
+
+        assert result == expected
+
+    @staticmethod
+    def test_tostr_non_empty_list():
+        check1 = CheckStatus(check="Check 1", valid=True, message="")
+        check2 = CheckStatus(check="Check 2", valid=False, message="Invalid")
+        check_list = CheckStatusList([check1, check2])
+        result = check_list.tostr()
+        expected = (
+            "+---------+----------+-----------+\n"
+            "| Check   | Is Valid | Rationale |\n"
+            "+---------+----------+-----------+\n"
+            "| Check 1 |   True   |           |\n"
+            "| Check 2 |  False   | Invalid   |\n"
+            "+---------+----------+-----------+"
+        )
+        assert result == expected
+
+    @staticmethod
+    def test_tostr_invalid_type():
+        with pytest.raises(TypeError):
+            invalid_check_list = CheckStatusList(["Not a CheckStatus object"])
+            invalid_check_list.tostr()
+
+

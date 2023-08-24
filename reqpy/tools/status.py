@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 from typing import Iterable
+from prettytable import PrettyTable
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
@@ -124,3 +125,31 @@ class CheckStatusList(list):
         return all(
             [elt.valid for elt in self]
         )
+
+    def tostr(self: CheckStatusList) -> str:
+
+        # creating an empty PrettyTable
+        x = PrettyTable()
+
+        x.field_names = [
+            "Check",
+            "Is Valid",
+            "Rationale",
+        ]
+
+        # column width
+        x._max_width = {
+            "Check": 30,
+            "Rationale": 30,
+            }
+        #
+        x.align["Check"] = "l"
+        x.align["Rationale"] = "l"
+
+        for elt in self:
+            x.add_row([
+                elt.check,
+                elt.valid,
+                elt.message
+                ])
+        return str(x)
