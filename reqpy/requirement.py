@@ -8,17 +8,19 @@ from loguru import logger as log
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from reqpy.tools.paths import validateCorrectFileExtension
+from .tools.paths import validateCorrectFileExtension, Directory
 
 from .constants import DEFAULT_REQPY_FILE_EXTENSION, DEFAULT_REPORT_EXTENSION
 from .tools.image import generate_random_image
 from .tools.markdown import MDText
-from .tools.status import CheckStatus
+from .tools.status import (CheckStatus, CheckStatusList,
+                           FileStatus, FileStatusList)
+from .__logging import Myconsole
 
 from .__genericItem import GenericItem
 from .__DB import GenericDB
 from .settings import RequirementSettings
-from .exception import ReqpyIOException
+from .exception import ReqpyDBException, ReqpyIOException
 from .tools.strings import (
     generate_paragraph,
     has_punctuation_or_accent,
@@ -239,52 +241,47 @@ class Requirement(BaseModel, GenericItem):
             Requirement.read(
                 filePath=filePath
             )
-            return CheckStatus(
-                check=checkName,
-                valid=True,
-                message=""
-            )
+            return CheckStatus.createValid(checkName=checkName)
+
         except Exception as e:
             errorMsg = str(e)
             return CheckStatus(
-                check="checkName",
+                checkName=checkName,
                 valid=False,
                 message=errorMsg
             )
 
-    @staticmethod
-    def get_file_Errors(
-         filePath: Path
-         ) -> str:
-        """
-        Get a list of errors found in the requirement file.
+    # @staticmethod
+    # def get_file_Errors(
+    #      filePath: Path
+    #      ) -> str:
+    #     """
+    #     Get a list of errors found in the requirement file.
 
-        Args:
-            filePath (Path): The file path to validate.
+    #     Args:
+    #         filePath (Path): The file path to validate.
 
-        Returns:
-            List[str]: The list of errors found in the file.
+    #     Returns:
+    #         List[str]: The list of errors found in the file.
 
-        """
-        try:
-            Requirement.read(
-                filePath=filePath
-            )
-            return ''
-        except Exception as e:
-            errorMsg = str(e)
-            return errorMsg
+    #     """
+    #     try:
+    #         Requirement.read(
+    #             filePath=filePath
+    #         )
+    #         return ''
+    #     except Exception as e:
+    #         errorMsg = str(e)
+    #         return errorMsg
 
     @staticmethod
     def is_ValidRequirementFile(
          filePath: Path
          ) -> bool:
-        if Requirement.get_file_Errors(filePath) == "":
-            return True  # List is not empty
-        else:
-            return False
+        return Requirement.validateRequirementFile(filePath=filePath).valid
 
 # -------------------------- EXPORT TOOLS -------------------------- #
+
     def toMD(self) -> str:
 
         listOfAttributes = self.attributesList
@@ -316,6 +313,10 @@ class Requirement(BaseModel, GenericItem):
             f.write(self.toMD())
 
         return newMDFile
+
+    @staticmethod
+    def getMDFileName(reqpyfile: Path) -> str:
+        return reqpyfile.stem 
 
 
 class RequirementsSet(GenericDB):
@@ -363,3 +364,103 @@ class RequirementsSet(GenericDB):
         alldirs = list(set(alldirs))
         allfiles = list(set(allfiles))
         return alldirs, allfiles
+
+    # ----------------------- DATABASE VALIDATION ---------------------- #
+    def validateRequirementsDB(self) -> FileStatusList:
+
+        # initiate
+        out = FileStatusList([])
+
+        # get list of MD File
+        reqfiles = Directory(self.folderPath).list_valid_files(
+            DEFAULT_REQPY_FILE_EXTENSION)
+
+        # loop over all yaml files
+        for reqfile in reqfiles:
+            # Initiate a fileStatus for reqfile
+            myfileStatus = FileStatus(
+                filePath=reqfile,
+                checks=CheckStatusList([]))
+
+            # Requirement file validation
+            myfileStatus.addCheckResult(
+                result=Requirement.validateRequirementFile(
+                    filePath=reqfile
+                )
+            )
+            out.append(myfileStatus)
+        return out
+    
+    # ----------------------- EXPORT TO MARKDOWN ----------------------- #
+    def generateMD(
+            self,
+            targetDir: Path,
+            show_console: bool = False
+            ) -> None:
+
+        Myconsole.apps(
+            msg="Generate Markdown File for Requirements Folder",
+            show_console=show_console
+        )
+
+        Myconsole.info(
+            msg=f"Target folder : {targetDir.absolute()}",
+            show_console=show_console
+        )
+
+        # validate database
+        Myconsole.task(
+                msg="Validate Requirement DataBase",
+                show_console=show_console,
+            )
+
+        checks = self.validateRequirementsDB()
+
+        if not checks.isAllFilesValid():
+            Myconsole.error(
+                msg=("The requirement database is not valid"
+                     " - please see stack info"),
+                show_console=show_console)
+            raise ReqpyDBException("Requirement Data Base is invalid")
+
+        Myconsole.ok(
+            msg="Requirement Database is valid",
+            show_console=show_console)
+
+        # copy Folder structure and additional files
+        self.copyFoldersFiles(
+            destinationDir=targetDir,
+            show_console=show_console)
+
+        Myconsole.task(
+                msg="Convert REQPY Files to Markdown files",
+                show_console=show_console,
+            )
+        # list reqpy files
+        listReqfiles = self.list_reqpy_files()
+
+        Myconsole.info(
+            msg=f"Number of files to convert : {len(listReqfiles)}",
+            show_console=show_console
+        )
+
+        sequence = Myconsole.progressBar(
+            sequence=listReqfiles,
+            description="Generate Markdown files...",
+            show_console=show_console
+        )
+
+        for reqfile in sequence:
+            newFolder = (targetDir /
+                         reqfile.relative_to(self.folderPath).parent)
+
+            newFile = newFolder / (
+                    Requirement.getMDFileName(reqfile) +
+                    DEFAULT_REPORT_EXTENSION
+                    )
+            # write files
+
+            newFile.parent.mkdir(parents=True, exist_ok=True)
+            Requirement.read(reqfile).toMDFile(
+                MDPath=newFile
+            )

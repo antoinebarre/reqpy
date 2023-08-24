@@ -1,7 +1,8 @@
 import pytest
 from pathlib import Path
 from typing import Any
-from reqpy import Requirement, ValidationStatus
+from reqpy.requirement import Requirement
+from reqpy.requirementItems import ValidationStatus
 from reqpy.exception import RequirementException,ReqpyIOException
 from reqpy.constants import DEFAULT_REQPY_FILE_EXTENSION
 
@@ -68,18 +69,6 @@ def test_read_invalid_requirement(tmp_path: Path, invalid_requirement_data: dict
     file_path.write_text("title: Invalid Title!?\n")
     with pytest.raises(ReqpyIOException):
         Requirement.read(filePath=file_path)
-
-def test_get_file_Errors_valid_requirement(tmp_path: Path, valid_requirement_data: dict[str, Any]):
-    file_path = tmp_path / "valid_requirement.yml"
-    file_path.write_text("title: Valid Title\n")
-    errors = Requirement.get_file_Errors(filePath=file_path)
-    assert errors == ""
-
-def test_get_file_Errors_invalid_requirement(tmp_path: Path, invalid_requirement_data: dict[str, Any]):
-    file_path = tmp_path / "invalid_requirement.yml"
-    file_path.write_text("title: Invalid Title!?\n")
-    errors = Requirement.get_file_Errors(filePath=file_path)
-    assert "Impossible to parse the YAML file" in errors
 
 def test_is_ValidRequirementFile(tmp_path: Path, valid_requirement_data: dict[str, Any]):
     file_path = tmp_path / ("valid_requirement" + DEFAULT_REQPY_FILE_EXTENSION)

@@ -1,9 +1,7 @@
 """DataBase management of REQPY"""
 
-from dataclasses import dataclass
 from pydantic import BaseModel, ConfigDict, field_validator
 from pathlib import Path
-from typing import List
 from shutil import copy
 from loguru import logger as log
 from .constants import DEFAULT_REQPY_FILE_EXTENSION
@@ -69,7 +67,7 @@ class GenericDB(BaseModel):
             )
     # --------------------------- VALIDATION TOOLS----------------------- #
 
-    def validateDataBase(self) -> CheckStatusList:
+    def validateDataBaseStructure(self) -> CheckStatusList:
 
         return CheckStatusList(
             [
@@ -80,14 +78,12 @@ class GenericDB(BaseModel):
 
     def __validateSubFolder(self) -> CheckStatus:
         checkName = "Validate Subfolders Existence"
-        print("tata:")
-        print(Directory(self.folderPath).list_subdirectories())
 
         if (Directory(self.folderPath).list_subdirectories() != [] and
                 not self.allowSubfolders):
 
             return CheckStatus(
-                check=checkName,
+                checkName=checkName,
                 valid=False,
                 message=(
                     "No subfolder is permietted"
@@ -105,7 +101,7 @@ class GenericDB(BaseModel):
                 ) != [] and
                 not self.allowAdditionalFiles):
             return CheckStatus(
-                check=checkName,
+                checkName=checkName,
                 valid=False,
                 message=(
                     "No additional file is permietted"
@@ -116,13 +112,18 @@ class GenericDB(BaseModel):
 
     # --------------------------- EXPORT TOOL -------------------------- #
 
+    def list_reqpy_files(self) -> list[Path]:
+        return Directory(self.folderPath).list_valid_files(
+            validExtension=DEFAULT_REQPY_FILE_EXTENSION
+        )
+
     def __copy_folders_structure(
             self,
             destinationDir: Path,
             show_console: bool = False,
             ) -> None:
         try:
-            Myconsole.apps(
+            Myconsole.task(
                 msg=f"Copy of the folder structure to {destinationDir}",
                 show_console=show_console,
                 )
@@ -143,7 +144,7 @@ class GenericDB(BaseModel):
                 newDir = destinationDir / folderName
 
                 # crate dir
-                dirPath.mkdir(parents=True, exist_ok=True)
+                newDir.mkdir(parents=True, exist_ok=True)
 
                 # logging
                 msg = f"Copy of the folder {newDir} OK"
@@ -168,15 +169,8 @@ class GenericDB(BaseModel):
 
         # Copy of the file
         try:
-            Myconsole.apps(
+            Myconsole.task(
                 msg=f"Copy of the additional files to {destinationDir}",
-                show_console=show_console,
-            )
-
-            # target info :
-            msg = f"Targeted Folder:{str(destinationDir.absolute())}"
-            Myconsole.info(
-                msg=msg,
                 show_console=show_console,
             )
 
@@ -247,10 +241,11 @@ class GenericDB(BaseModel):
         destinationDir.mkdir(parents=True, exist_ok=True)
 
         # validate folder structure
-        if not self.validateDataBase().is_valid():
+        if not self.validateDataBaseStructure().is_valid():
+            detected_errors = self.validateDataBaseStructure().extract_error().tostr()
             msg = (
                 f"The directory {self.folderPath} is not valid.\n"
-                f"Detected Errors :\n{self.validateDataBase().tostr()}"
+                f"Detected Errors :\n{detected_errors}"
                 )
             Myconsole.error(
                 msg=msg,
@@ -268,4 +263,3 @@ class GenericDB(BaseModel):
                 destinationDir=destinationDir,
                 show_console=show_console,
             )
-

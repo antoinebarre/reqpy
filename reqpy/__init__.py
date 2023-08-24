@@ -8,8 +8,7 @@ __version__ = "0.1.0"
 from loguru import logger
 import sys
 
-from .requirement import Requirement
-from .requirementItems import *
+from .requirement import Requirement, RequirementsSet
 
 logger_format = (
     "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "

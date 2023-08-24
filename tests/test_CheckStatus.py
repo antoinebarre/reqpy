@@ -3,59 +3,59 @@ from reqpy.tools.status import CheckStatus, CheckStatusList  # Import the CheckS
 
 def test_valid_true_with_message():
     with pytest.raises(ValueError):
-        CheckStatus(check="Test Check", valid=True, message="Some message")
+        CheckStatus(checkName="Test Check", valid=True, message="Some message")
 
 def test_valid_true_without_message():
-    status = CheckStatus(check="Test Check", valid=True, message="")
-    assert status.check == "Test Check"
+    status = CheckStatus(checkName="Test Check", valid=True, message="")
+    assert status.checkName == "Test Check"
     assert status.valid == True
     assert status.message == ""
 
 def test_createValid():
     status = CheckStatus.createValid(checkName="Test Check")
-    assert status.check == "Test Check"
+    assert status.checkName == "Test Check"
     assert status.valid == True
     assert status.message == ""
 
 def test_valid_false_with_message():
-    status = CheckStatus(check="Test Check", valid=False, message="Error message")
-    assert status.check == "Test Check"
+    status = CheckStatus(checkName="Test Check", valid=False, message="Error message")
+    assert status.checkName == "Test Check"
     assert status.valid == False
     assert status.message == "Error message"
 
 def test_valid_false_without_message():
     with pytest.raises(TypeError):
-        CheckStatus(check="Test Check", valid=False)
+        CheckStatus(checkName="Test Check", valid=False)
 
 def test_str_valid_true():
-    status = CheckStatus(check="Test Check", valid=True, message="")
+    status = CheckStatus(checkName="Test Check", valid=True, message="")
     expected_output = "Check   : Test Check\nValid: True\n"
     assert str(status) == expected_output
 
 def test_str_valid_false_with_message():
-    status = CheckStatus(check="Test Check", valid=False, message="Error message")
+    status = CheckStatus(checkName="Test Check", valid=False, message="Error message")
     expected_output = "Check   : Test Check\nValid   : False\nMessages: Error message"
     assert str(status) == expected_output
 
 def test_str_valid_false_without_message():
-    status = CheckStatus(check="Test Check", valid=False, message="error")
+    status = CheckStatus(checkName="Test Check", valid=False, message="error")
     expected_output = "Check   : Test Check\nValid   : False\nMessages: error"
     assert str(status) == expected_output
 
 def test_bad_checkName():
     with pytest.raises(ValueError):
-        CheckStatus(check="",valid=True,message="")
+        CheckStatus(checkName="",valid=True,message="")
 
 def test_bad_message_with_failled_check():
     with pytest.raises(ValueError):
-        CheckStatus(check="toto",valid=False,message="")
+        CheckStatus(checkName="toto",valid=False,message="")
 
 
 
 def test_checkstatus_list_constructor():
-    checkstatus1 = CheckStatus(check="Check 1", valid=True, message="")
-    checkstatus2 = CheckStatus(check="Check 2", valid=False, message="Error message")
-    checkstatus3 = CheckStatus(check="Check 3", valid=True, message="")
+    checkstatus1 = CheckStatus(checkName="Check 1", valid=True, message="")
+    checkstatus2 = CheckStatus(checkName="Check 2", valid=False, message="Error message")
+    checkstatus3 = CheckStatus(checkName="Check 3", valid=True, message="")
 
     # Valid list of CheckStatus objects
     checkstatus_list = CheckStatusList([checkstatus1, checkstatus2, checkstatus3])
@@ -68,7 +68,7 @@ def test_checkstatus_list_constructor():
 def test_checkstatus_list_append():
     checkstatus_list = CheckStatusList([])
 
-    checkstatus = CheckStatus(check="Check 1", valid=True, message="")
+    checkstatus = CheckStatus(checkName="Check 1", valid=True, message="")
     checkstatus_list.append(checkstatus)
     assert len(checkstatus_list) == 1
 
@@ -77,13 +77,13 @@ def test_checkstatus_list_append():
 
 def test_checkstatus_list_extend():
     checkstatus_list1 = CheckStatusList([
-        CheckStatus(check="Check 1", valid=True, message=""),
-        CheckStatus(check="Check 2", valid=True, message="")
+        CheckStatus(checkName="Check 1", valid=True, message=""),
+        CheckStatus(checkName="Check 2", valid=True, message="")
     ])
 
     checkstatus_list2 = CheckStatusList([
-        CheckStatus(check="Check 3", valid=False, message="Error message"),
-        CheckStatus(check="Check 4", valid=True, message="")
+        CheckStatus(checkName="Check 3", valid=False, message="Error message"),
+        CheckStatus(checkName="Check 4", valid=True, message="")
     ])
 
     checkstatus_list1.extend(checkstatus_list2)
@@ -93,8 +93,8 @@ def test_checkstatus_list_extend():
         checkstatus_list1.extend(["not a CheckStatus", "also not a CheckStatus"])
 
 def test_checkstatus_list_is_valid():
-    valid_checkstatus = CheckStatus(check="Check 1", valid=True, message="")
-    invalid_checkstatus = CheckStatus(check="Check 2", valid=False, message="Error message")
+    valid_checkstatus = CheckStatus(checkName="Check 1", valid=True, message="")
+    invalid_checkstatus = CheckStatus(checkName="Check 2", valid=False, message="Error message")
 
     valid_list = CheckStatusList([valid_checkstatus, valid_checkstatus])
     invalid_list = CheckStatusList([valid_checkstatus, invalid_checkstatus])
@@ -121,8 +121,8 @@ class TestCheckStatusList:
 
     @staticmethod
     def test_tostr_non_empty_list():
-        check1 = CheckStatus(check="Check 1", valid=True, message="")
-        check2 = CheckStatus(check="Check 2", valid=False, message="Invalid")
+        check1 = CheckStatus(checkName="Check 1", valid=True, message="")
+        check2 = CheckStatus(checkName="Check 2", valid=False, message="Invalid")
         check_list = CheckStatusList([check1, check2])
         result = check_list.tostr()
         expected = (
