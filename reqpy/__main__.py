@@ -1,6 +1,7 @@
 # #!/usr/bin/python
+from __future__ import annotations
+from reqpy.tools.paths import test_toto
 
-from .tools.paths import test_toto
 
 print("hello")
 test_toto()

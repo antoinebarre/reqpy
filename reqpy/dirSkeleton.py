@@ -23,22 +23,29 @@ class FolderStructure(BaseModel):
         )
 
     # --------------------------- CONSTRUCTOR -------------------------- #
-    def __init__(self, currentFolderPath: Path = Path()):
+    def __init__(self, dirPath: Path = Path()):
         """Constructor for the FolderStructure class.
 
         Args:
-            currentFolderPath (Path): The current folder path. Defaults to
+            dirPath (Path): The current folder path. Defaults to
               an empty Path object.
 
         """
 
+        # The main folder shall be an Path object
+        if not isinstance(dirPath, Path):
+            raise TypeError((
+                "dirPath shall be a pathlib.Path object."
+                f" (current {type(dirPath)})"
+                ))
+
         # the main folder shall exist
-        if not currentFolderPath.exists():
+        if not dirPath.exists():
             raise FileExistsError(
-                f"The folder {currentFolderPath} doesnt exist"
+                f"The folder {dirPath} doesnt exist"
             )
 
-        main_folder = currentFolderPath / FoldersSettings.main_folder_name
+        main_folder = dirPath / FoldersSettings.main_folder_name
 
         super().__init__(
             main_folder=main_folder,
@@ -77,13 +84,13 @@ class FolderStructure(BaseModel):
             bool: True if all folders exist, False otherwise.
 
         """
-        if bool(self.get_missing_folders()):
-            return False
-        else:
+        if self.get_missing_folders() == []:
             return True
+        else:
+            return False
 
     # -------------------------- CREATE/REMOVE ------------------------- #
-    @log.catch
+
     @staticmethod
     def create_gitignore_file(directory: Path) -> Path:
         gitignore_path = Path(directory) / ".gitignore"
@@ -113,7 +120,6 @@ class FolderStructure(BaseModel):
             # add gitignore file
             FolderStructure.create_gitignore_file(folder)
 
-    @log.catch
     def delete_folders(self) -> None:
         """Delete all folders.
 
@@ -124,7 +130,6 @@ class FolderStructure(BaseModel):
         msg = f"remove folder :{(self.main_folder).absolute()}\n"
         log.debug(msg)
 
-    @log.catch
     def reset_folders(self) -> None:
         """Reset all folders by deleting and recreating them.
         """

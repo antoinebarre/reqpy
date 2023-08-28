@@ -9,6 +9,7 @@ from loguru import logger
 import sys
 
 from .requirement import Requirement, RequirementsSet
+from .apps import Apps
 
 logger_format = (
     "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "

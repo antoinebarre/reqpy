@@ -7,10 +7,10 @@ import random
 from loguru import logger as log
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+import pandas as pd
 
 from .tools.paths import validateCorrectFileExtension, Directory
-
-from .constants import DEFAULT_REQPY_FILE_EXTENSION, DEFAULT_REPORT_EXTENSION
+from .constants import DEFAULT_REQ_NAME, DEFAULT_REQPY_FILE_EXTENSION, DEFAULT_REPORT_EXTENSION
 from .tools.image import generate_random_image
 from .tools.markdown import MDText
 from .tools.status import (CheckStatus, CheckStatusList,
@@ -135,7 +135,6 @@ class Requirement(BaseModel, GenericItem):
 
 # -------------------------- READ / WRITE TOOLS ------------------------- #
 
-    @log.catch(reraise=True)
     @staticmethod
     def read(
             filePath: Path,
@@ -143,6 +142,10 @@ class Requirement(BaseModel, GenericItem):
 
         data = Requirement.read2dict(
             filePath=filePath)
+        
+        # logging
+        log.trace(
+            (f"readed dict: \n{data}"))
         try:
             new_req = Requirement(**data)
         except Exception as e:
@@ -151,6 +154,34 @@ class Requirement(BaseModel, GenericItem):
                 f" due to this error: \n{str(e)}"
             )
         return new_req
+
+    @staticmethod
+    def create_new_requirement(
+        filePath: Path,
+            ) -> Path:
+        # new requirement
+        req = Requirement(title="New Requirement to rename")
+        # analyze file name
+        fileName = filePath.stem
+        dir_path = filePath.parent
+
+        try:
+            file_number = 1
+            while True:
+                file_name = f"{fileName}{file_number:02d}"
+                file_path = (dir_path / 
+                             (file_name + DEFAULT_REQPY_FILE_EXTENSION))
+                if not file_path.exists():
+                    req.write(filePath=file_path)
+
+                    # logging
+                    log.trace(
+                        f"new req file created: {file_path.absolute()} "
+                    )
+                    return file_path
+                file_number += 1
+        except Exception as e:
+            raise RuntimeError("An error occurred:", str(e))
 
     # ------------------------ FAKE REQUIREMENT ------------------------ #
     @staticmethod
@@ -251,29 +282,6 @@ class Requirement(BaseModel, GenericItem):
                 message=errorMsg
             )
 
-    # @staticmethod
-    # def get_file_Errors(
-    #      filePath: Path
-    #      ) -> str:
-    #     """
-    #     Get a list of errors found in the requirement file.
-
-    #     Args:
-    #         filePath (Path): The file path to validate.
-
-    #     Returns:
-    #         List[str]: The list of errors found in the file.
-
-    #     """
-    #     try:
-    #         Requirement.read(
-    #             filePath=filePath
-    #         )
-    #         return ''
-    #     except Exception as e:
-    #         errorMsg = str(e)
-    #         return errorMsg
-
     @staticmethod
     def is_ValidRequirementFile(
          filePath: Path
@@ -316,7 +324,7 @@ class Requirement(BaseModel, GenericItem):
 
     @staticmethod
     def getMDFileName(reqpyfile: Path) -> str:
-        return reqpyfile.stem 
+        return reqpyfile.stem + DEFAULT_REPORT_EXTENSION
 
 
 class RequirementsSet(GenericDB):
@@ -356,6 +364,13 @@ class RequirementsSet(GenericDB):
                     p = Path(root) / (
                         random_string() +
                         DEFAULT_REQPY_FILE_EXTENSION)
+                    
+                    # logging
+                    log.trace(
+                        (
+                        f"Created fake File: {p.absolute()}"
+                        )
+                    )
                     p = Requirement.writeFakeRequirementFile(p)
                     allfiles.append(p)
                 depth = os.path.relpath(root, str(basedir)).count(os.sep)
@@ -455,12 +470,27 @@ class RequirementsSet(GenericDB):
                          reqfile.relative_to(self.folderPath).parent)
 
             newFile = newFolder / (
-                    Requirement.getMDFileName(reqfile) +
-                    DEFAULT_REPORT_EXTENSION
+                    Requirement.getMDFileName(reqfile)
                     )
-            # write files
 
+            # write files
             newFile.parent.mkdir(parents=True, exist_ok=True)
             Requirement.read(reqfile).toMDFile(
                 MDPath=newFile
             )
+    # ------------------------------ TEST ------------------------------ #
+
+    def toPandas(self) -> pd.DataFrame:
+
+        # list reqpy files
+        listReqfiles = self.list_reqpy_files()
+
+        listReq: list[dict] = []
+
+        for reqfile in listReqfiles:
+            dd = Requirement.read(reqfile).toDict()
+            dd["fileName"] = reqfile.relative_to(self.folderPath)
+            listReq.append(dd)
+
+        return pd.DataFrame.from_records(listReq)
+
