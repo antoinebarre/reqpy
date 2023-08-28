@@ -4,13 +4,14 @@
 from __future__ import annotations
 import os
 import random
+from typing import Callable
 from loguru import logger as log
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 import pandas as pd
 
 from .tools.paths import validateCorrectFileExtension, Directory
-from .constants import DEFAULT_REQ_NAME, DEFAULT_REQPY_FILE_EXTENSION, DEFAULT_REPORT_EXTENSION
+from .constants import DEFAULT_REQPY_FILE_EXTENSION, DEFAULT_REPORT_EXTENSION
 from .tools.image import generate_random_image
 from .tools.markdown import MDText
 from .tools.status import (CheckStatus, CheckStatusList,
@@ -142,7 +143,7 @@ class Requirement(BaseModel, GenericItem):
 
         data = Requirement.read2dict(
             filePath=filePath)
-        
+
         # logging
         log.trace(
             (f"readed dict: \n{data}"))
@@ -169,7 +170,7 @@ class Requirement(BaseModel, GenericItem):
             file_number = 1
             while True:
                 file_name = f"{fileName}{file_number:02d}"
-                file_path = (dir_path / 
+                file_path = (dir_path /
                              (file_name + DEFAULT_REQPY_FILE_EXTENSION))
                 if not file_path.exists():
                     req.write(filePath=file_path)
@@ -247,26 +248,23 @@ class Requirement(BaseModel, GenericItem):
     @staticmethod
     def validateRequirementFile(
             filePath: Path
-            ) -> CheckStatus:
-        """
-        Validates the given requirement file.
+            ) -> CheckStatusList:
 
-        This method reads the content of a requirement file and attempts to
-        create a `Requirement` instance from it. If successful, it returns a
-        `CheckStatus` object indicating that the file is valid. If the content
-        cannot be parsed or if an exception occurs during the instantiation of
-        the `Requirement` instance, the method returns a `CheckStatus` object
-        indicating that the file is invalid and includes the error message.
+        # list of checks
+        check_list_fct: list[Callable] = [
+            Requirement.__validate_reading_requirement_file,
+        ]
 
-        Args:
-            filePath (Path): The path to the requirement file to be validated.
+        out = [check(filePath) for check in check_list_fct]
 
-        Returns:
-            CheckStatus: A `CheckStatus` object indicating whether the file is
-                        valid and containing any error messages if applicable.
-        """
+        return CheckStatusList(out)
 
-        checkName = "Validates the requirement file"
+    @staticmethod
+    def __validate_reading_requirement_file(
+         filePath: Path
+         ) -> CheckStatus:
+
+        checkName = "Validate the read of the Requirement file"
 
         try:
             Requirement.read(
@@ -286,7 +284,8 @@ class Requirement(BaseModel, GenericItem):
     def is_ValidRequirementFile(
          filePath: Path
          ) -> bool:
-        return Requirement.validateRequirementFile(filePath=filePath).valid
+        return Requirement.validateRequirementFile(
+            filePath=filePath).is_valid()
 
 # -------------------------- EXPORT TOOLS -------------------------- #
 
@@ -364,11 +363,11 @@ class RequirementsSet(GenericDB):
                     p = Path(root) / (
                         random_string() +
                         DEFAULT_REQPY_FILE_EXTENSION)
-                    
+
                     # logging
                     log.trace(
                         (
-                        f"Created fake File: {p.absolute()}"
+                         f"Created fake File: {p.absolute()}"
                         )
                     )
                     p = Requirement.writeFakeRequirementFile(p)
@@ -398,11 +397,11 @@ class RequirementsSet(GenericDB):
                 checks=CheckStatusList([]))
 
             # Requirement file validation
-            myfileStatus.addCheckResult(
-                result=Requirement.validateRequirementFile(
-                    filePath=reqfile
+            myfileStatus.addCheckResultList(
+                resultList=Requirement.validateRequirementFile(
+                                    filePath=reqfile
+                                    )
                 )
-            )
             out.append(myfileStatus)
         return out
     
@@ -493,4 +492,3 @@ class RequirementsSet(GenericDB):
             listReq.append(dd)
 
         return pd.DataFrame.from_records(listReq)
-

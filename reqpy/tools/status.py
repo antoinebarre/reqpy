@@ -210,7 +210,7 @@ class CheckStatusList(list):
         # column width
         x._max_width = {
             "Check": 50,
-            "Rationale": 30,
+            "Rationale": 50,
             }
         #
         x.align["Check"] = "l"
@@ -252,6 +252,12 @@ class FileStatus():
             result: CheckStatus
             ) -> None:
         self.checks.append(result)
+
+    def addCheckResultList(
+            self,
+            resultList: CheckStatusList
+            ) -> None:
+        self.checks.extend(resultList)
 
     def isValidFile(self) -> bool:
         return self.checks.is_valid()

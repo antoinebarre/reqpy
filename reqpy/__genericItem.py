@@ -3,6 +3,8 @@ from loguru import logger as log
 from pathlib import Path
 from typing import Any, Dict
 import yaml
+
+from reqpy.tools.files import safe_open_w
 from .constants import DEFAULT_REQPY_FILE_EXTENSION
 from .tools.paths import (validateCorrectFileExtension,
                           validateFileExistence)
@@ -94,7 +96,6 @@ class GenericItem():
 
 # -------------------------------- I/O FILES ------------------------------- #
 
-    @log.catch(reraise=True)
     def write(
             self,
             filePath: Path,
@@ -132,7 +133,7 @@ class GenericItem():
 
         data = self.toDict()
 
-        with open(filePath, 'w+') as file:
+        with safe_open_w(filePath) as file:
             yaml.safe_dump(data, file,
                            sort_keys=False)
 
@@ -141,7 +142,6 @@ class GenericItem():
         )
         return filePath
 
-    @log.catch(reraise=True)
     @staticmethod
     def read2dict(filePath: Path) -> Dict:
         """

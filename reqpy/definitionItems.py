@@ -1,7 +1,7 @@
 from enum import StrEnum, auto
 
 
-class DefintionType(StrEnum):
+class DefinitionType(StrEnum):
     ACRONYM = auto()
     DEFINITION = auto()
 
